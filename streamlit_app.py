@@ -1,3 +1,3 @@
 import streamlit as st
 
-st.title("Salary Prediction is fun")
+st.title("Salary Prediction is fun ok")
