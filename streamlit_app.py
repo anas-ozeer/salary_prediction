@@ -21,10 +21,7 @@ if page == "Data Exploration":
     st.dataframe(df.head())
 
     st.subheader("Basic Info")
-    buffer = []
-    df.info(buf=buffer)
-    s = '\n'.join(buffer)
-    st.text(s)
+    df.info()
 
     st.subheader("Summary Statistics")
     st.write(df.describe())
