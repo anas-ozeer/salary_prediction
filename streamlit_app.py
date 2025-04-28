@@ -4,7 +4,7 @@ import pandas as pd
 # Load the dataset
 @st.cache_data
 def load_data():
-    df = pd.read_csv('/mnt/data/salary_data_cleaned.csv')
+    df = pd.read_csv('salary_data_cleaned.csv')
     return df
 
 df = load_data()
