@@ -53,12 +53,9 @@ if page == "Introduction":
     # st.write(missing[missing > 0].sort_values(ascending=False))
 
     st.subheader("Unique Values in Categorical Columns")
-# Select only relevant categorical columns for value counts
-    cols = ['Job Title', 'Company Name', 'Location', 'Industry', 'Company Size']
-    cols = [col for col in cols if col in df.columns]  # Ensure they exist in the DataFrame
+    cols = df.select_dtypes(include='object').columns
     for col in cols:
         st.write(f"**{col}**: {df[col].nunique()} unique values")
-        st.write(df[col].value_counts().head(5))
 
     st.subheader("Top 10 Job Titles")
     st.write(df['Job Title'].value_counts().head(10))
