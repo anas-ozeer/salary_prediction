@@ -63,7 +63,7 @@ if page == "Introduction":
     st.write(df['Job Title'].value_counts().head(10))
 
     st.subheader("Top 10 Hiring Companies")
-    st.write(df['Company'].value_counts().head(10))
+    st.write(df['Company Name'].value_counts().head(10))
 
     st.subheader("Top 10 Locations")
     st.write(df['Location'].value_counts().head(10))
