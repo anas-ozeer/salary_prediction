@@ -45,14 +45,14 @@ if page == "Introduction":
         with col1:
             selected_industries = st.multiselect(
                 "Select Industry:",
-                options=df['industry'].dropna().unique(),
+                options=df['Industry'].dropna().unique(),
                 key="industry_filter"
             )
 
         with col2:
             selected_locations = st.multiselect(
                 "Select Location:",
-                options=df['location'].dropna().unique(),
+                options=df['Location'].dropna().unique(),
                 key="location_filter"
             )
 
@@ -60,10 +60,10 @@ if page == "Introduction":
     filtered_df = df.copy()
 
     if selected_industries:
-        filtered_df = filtered_df[filtered_df['industry'].isin(selected_industries)]
+        filtered_df = filtered_df[filtered_df['Industry'].isin(selected_industries)]
 
     if selected_locations:
-        filtered_df = filtered_df[filtered_df['location'].isin(selected_industries)]
+        filtered_df = filtered_df[filtered_df['Location'].isin(selected_industries)]
 
     # Show filtered results
     st.subheader("Filtered Job Postings")
