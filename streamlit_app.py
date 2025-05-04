@@ -11,7 +11,7 @@ df = load_data()
 
 # Sidebar navigation
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Data Exploration", "Data Visualization", "Modeling"])
+page = st.sidebar.radio("Go to", ["Introduction", "Data Visualization", "Modeling"])
 
 # Data Exploration Page
 if page == "Introduction":
