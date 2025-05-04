@@ -47,7 +47,7 @@ elif page == "Data Visualization":
     looker_dashboard_url = "https://lookerstudio.google.com/embed/reporting/4836b76b-fc1b-4563-a492-3ba2a915ecd8/page/bpRIF"
 
     # Embed Looker dashboard
-    components.iframe(src=looker_dashboard_url, height=100%, width=100%)
+    components.iframe(src=looker_dashboard_url, height="100%", width="100%")
 
 
 
