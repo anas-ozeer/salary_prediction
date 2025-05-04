@@ -59,11 +59,11 @@ if page == "Introduction":
 
     filtered_df = df.copy()
 
-    if industries:
-        filtered_df = filtered_df[filtered_df['industry'].isin(industries)]
+    if selected_industries:
+        filtered_df = filtered_df[filtered_df['industry'].isin(selected_industries)]
 
-    if locations:
-        filtered_df = filtered_df[filtered_df['location'].isin(locations)]
+    if selected_locations:
+        filtered_df = filtered_df[filtered_df['location'].isin(selected_industries)]
 
     # Show filtered results
     st.subheader("Filtered Job Postings")
