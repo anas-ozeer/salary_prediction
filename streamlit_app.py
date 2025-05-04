@@ -15,27 +15,63 @@ page = st.sidebar.radio("Go to", ["Introduction", "Data Visualization", "Modelin
 
 # Data Exploration Page
 if page == "Introduction":
-    # Title and Introduction
     st.title("📊 Job Postings Data Analysis App")
 
     st.markdown("""
-    Welcome to the **Job Postings Data Analysis App**!  
-    This application allows you to explore and analyze a dataset of job postings to gain insights into hiring trends, job roles, industries, and locations.
+    👋 **Welcome to the Job Postings Data Analysis App!**
 
-    With this tool, you can:
-    - Examine the distribution of job postings by industry, job function, and location.
-    - Identify popular job titles and companies.
-    - Visualize key metrics and trends interactively.
+    This interactive tool is built to explore a rich dataset of Data Science job postings — and more importantly, to understand **what drives salaries** in the field.  
+    By analyzing patterns across industries, company types, job requirements, and locations, we aim to answer a central question:
 
-    Upload your own dataset or use the default dataset to get started.
+    ### 💡 *What factors most influence a data scientist’s salary — and can we predict it accurately based on those features?*
+
+    ---
+
+    ### 🔍 Through this app, we explore:
+    - **Which company sizes** (startups, mid-size, large enterprises) are hiring data scientists most actively  
+    - **Which sectors and industries** are investing heavily in data science talent  
+    - **How skill requirements differ** between startups and established companies  
+    - **Which U.S. locations** tend to offer **the highest salaries** for data scientists  
+
+    As you navigate through filters and visualizations, you’ll see how these variables relate to salary.
+
+    ---
+
+    ### 🤖 And at the core of it all:
+    We’re building a **machine learning model** that uses these variables — such as job title, location, company size, and more — to **predict the expected salary** for a given job posting.
+
+    In short, this project is about turning job market data into actionable salary insights using data science itself.
     """)
-
     st.subheader("Dataset Overview")
     st.dataframe(df.head())
 
+    st.subheader("Summary Statistics (Numerical Columns)")
+    st.write(df.describe())
 
-    st.subheader("Preview of Dataset")
-    st.dataframe(df.head())
+    st.subheader("Missing Values Per Column")
+    missing = df.isnull().sum()
+    st.write(missing[missing > 0].sort_values(ascending=False))
+
+    st.subheader("Unique Values in Categorical Columns")
+    for col in df.select_dtypes(include='object').columns:
+        st.write(f"**{col}**: {df[col].nunique()} unique values")
+        st.write(df[col].value_counts().head(5))  # Show top 5 values
+
+    st.subheader("Top 10 Job Titles")
+    st.write(df['Job Title'].value_counts().head(10))
+
+    st.subheader("Top 10 Hiring Companies")
+    st.write(df['Company'].value_counts().head(10))
+
+    st.subheader("Top 10 Locations")
+    st.write(df['Location'].value_counts().head(10))
+
+    st.subheader("Top 10 Industries")
+    st.write(df['Industry'].value_counts().head(10))
+
+    if 'salary' in df.columns:
+        st.subheader("Salary Statistics")
+        st.write(df['salary'].describe())
 
     # Optional filtering
     # Filters inside the page
@@ -63,7 +99,7 @@ if page == "Introduction":
         filtered_df = filtered_df[filtered_df['Industry'].isin(selected_industries)]
 
     if selected_locations:
-        filtered_df = filtered_df[filtered_df['Location'].isin(selected_industries)]
+        filtered_df = filtered_df[filtered_df['Location'].isin(selected_locations)]
 
     # Show filtered results
     st.subheader("Filtered Job Postings")
@@ -71,23 +107,6 @@ if page == "Introduction":
     st.dataframe(filtered_df.head(20))
 
 
-    st.subheader("Basic Info")
-    df.info()
-
-    st.subheader("Summary Statistics")
-    st.write(df.describe())
-
-    st.subheader("Missing Values")
-    st.write(df.isnull().sum())
-
-    st.subheader("Unique Values in Categorical Columns")
-    for col in df.columns:
-        if df[col].dtype == 'object':
-            st.write(f"**{col}**: {df[col].nunique()} unique values")
-
-    if 'salary' in df.columns:
-        st.subheader("Salary Distribution")
-        st.write(df['salary'].describe())
 
 # Data Visualization Page
 elif page == "Data Visualization":
