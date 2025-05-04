@@ -38,7 +38,7 @@ if page == "Introduction":
     ---
 
     ### 🤖 And at the core of it all:
-    We’re building a **machine learning model** that uses these variables — such as job title, location, company size, and more — to **predict the expected salary** for a given job posting.
+    We’re building a **machine learning model** that uses these variables — such as average salary, location, company size, company type and more — to **predict the expected salary** for a given job posting.
 
     In short, this project is about turning job market data into actionable salary insights using data science itself.
     """)
@@ -48,14 +48,16 @@ if page == "Introduction":
     st.subheader("Summary Statistics (Numerical Columns)")
     st.write(df.describe())
 
-    st.subheader("Missing Values Per Column")
-    missing = df.isnull().sum()
-    st.write(missing[missing > 0].sort_values(ascending=False))
+    # st.subheader("Missing Values Per Column")
+    # missing = df.isnull().sum()
+    # st.write(missing[missing > 0].sort_values(ascending=False))
 
     st.subheader("Unique Values in Categorical Columns")
-    for col in df.select_dtypes(include='object').columns:
+    cols = df.select_dtypes(include='object').columns
+    cols = cols[~cols.isin(['Job Title', 'Company', 'Location', 'Industry'])]  # Exclude specific columns
+    for col in cols:
         st.write(f"**{col}**: {df[col].nunique()} unique values")
-        st.write(df[col].value_counts().head(5))  # Show top 5 values
+        st.write(df[col].value_counts().head(5))
 
     st.subheader("Top 10 Job Titles")
     st.write(df['Job Title'].value_counts().head(10))
