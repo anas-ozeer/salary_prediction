@@ -14,11 +14,62 @@ st.sidebar.title("Navigation")
 page = st.sidebar.radio("Go to", ["Data Exploration", "Data Visualization", "Modeling"])
 
 # Data Exploration Page
-if page == "Data Exploration":
-    st.title("Data Exploration")
-    
+if page == "Introduction":
+    # Title and Introduction
+    st.title("📊 Job Postings Data Analysis App")
+
+    st.markdown("""
+    Welcome to the **Job Postings Data Analysis App**!  
+    This application allows you to explore and analyze a dataset of job postings to gain insights into hiring trends, job roles, industries, and locations.
+
+    With this tool, you can:
+    - Examine the distribution of job postings by industry, job function, and location.
+    - Identify popular job titles and companies.
+    - Visualize key metrics and trends interactively.
+
+    Upload your own dataset or use the default dataset to get started.
+    """)
+
     st.subheader("Dataset Overview")
     st.dataframe(df.head())
+
+
+    st.subheader("Preview of Dataset")
+    st.dataframe(df.head())
+
+    # Optional filtering
+    # Filters inside the page
+    with st.expander("🔍 Filter Options"):
+        col1, col2 = st.columns(2)
+
+        with col1:
+            selected_industries = st.multiselect(
+                "Select Industry:",
+                options=df['industry'].dropna().unique(),
+                key="industry_filter"
+            )
+
+        with col2:
+            selected_locations = st.multiselect(
+                "Select Location:",
+                options=df['location'].dropna().unique(),
+                key="location_filter"
+            )
+
+
+    filtered_df = df.copy()
+
+    if industries:
+        filtered_df = filtered_df[filtered_df['industry'].isin(industries)]
+
+    if locations:
+        filtered_df = filtered_df[filtered_df['location'].isin(locations)]
+
+    # Show filtered results
+    st.subheader("Filtered Job Postings")
+    st.write(f"Total jobs found: {filtered_df.shape[0]}")
+    st.dataframe(filtered_df.head(20))
+
 
     st.subheader("Basic Info")
     df.info()
