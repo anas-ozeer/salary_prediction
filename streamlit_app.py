@@ -41,7 +41,15 @@ if page == "Data Exploration":
 # Data Visualization Page
 elif page == "Data Visualization":
     st.title("Data Visualization")
-    st.write("This page is under construction. 📊")
+    import streamlit.components.v1 as components
+
+    # Your Looker Studio dashboard URL
+    looker_dashboard_url = "https://lookerstudio.google.com/embed/reporting/4836b76b-fc1b-4563-a492-3ba2a915ecd8/page/bpRIF"
+
+    # Embed Looker dashboard
+    components.iframe(src=looker_dashboard_url, height=600, width=1000)
+
+
 
 # Modeling Page
 elif page == "Modeling":
