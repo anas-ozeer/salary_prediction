@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn import metrics as sk_metrics
-from pycaret.regression import setup, compare_models
+from pycaret.regression import setup, tune_model, compare_models
 import mlflow
 import mlflow.sklearn
 import dagshub
@@ -154,6 +154,7 @@ elif page == "AI Explainability":
 # HYPERPARAMETER TUNING
 elif page == "Hyperparameter Tuning":
     st.title("🤖 Hyperparameter Tuning with PyCaret + MLflow via DAGsHub")
+    
     # Train-test split
     salary_train, salary_test = train_test_split(dfnew, test_size=0.2, random_state=42)
 
@@ -164,40 +165,45 @@ elif page == "Hyperparameter Tuning":
     if st.button("🚀 Run Hyperparameter Tuning & Log to MLflow"):
         with st.spinner("Training and logging top models..."):
             # PyCaret setup
+            from pycaret.regression import setup, tune_model, compare_models
+
+            # PyCaret setup
             reg1 = setup(data=salary_train, target='avg_salary', session_id=42, verbose=False)
 
-            # Select top 3 models
-            top5 = compare_models(n_select=5)
+            # Compare models and select the top model
+            top_model = compare_models(n_select=1)  # Select top model for tuning
 
-            # Evaluate and log each model
-            for i, model in enumerate(top5, 1):
-                with mlflow.start_run(run_name=f"Regressor {i}: {model.__class__.__name__}"):
-                    model_name = f"regressor_model_{i}"
+            # Perform hyperparameter tuning on the selected top model
+            tuned_model = tune_model(top_model)
 
-                    # Log model
-                    mlflow.sklearn.log_model(model, model_name)
+            # Log the tuned model and its parameters using MLflow
+            with mlflow.start_run(run_name=f"Tuned Model: {tuned_model.__class__.__name__}"):
+                model_name = "tuned_regressor_model"
+                
+                # Log model
+                mlflow.sklearn.log_model(tuned_model, model_name)
 
-                    # Log parameters
-                    params = model.get_params()
-                    for key, value in params.items():
-                        mlflow.log_param(key, value)
+                # Log parameters
+                params = tuned_model.get_params()
+                for key, value in params.items():
+                    mlflow.log_param(key, value)
 
-                    # Predict and evaluate
-                    y_test = salary_test["avg_salary"]
-                    X_test = salary_test.drop("avg_salary", axis=1)
-                    y_pred = model.predict(X_test)
+                # Predict and evaluate
+                y_test = salary_test["avg_salary"]
+                X_test = salary_test.drop("avg_salary", axis=1)
+                y_pred = tuned_model.predict(X_test)
 
-                    # Calculate regression metrics
-                    rmse = sk_metrics.root_mean_squared_error(y_test, y_pred)
-                    mae = sk_metrics.mean_absolute_error(y_test, y_pred)
-                    r2 = sk_metrics.r2_score(y_test, y_pred)
+                # Calculate regression metrics
+                rmse = sk_metrics.mean_squared_error(y_test, y_pred, squared=False)
+                mae = sk_metrics.mean_absolute_error(y_test, y_pred)
+                r2 = sk_metrics.r2_score(y_test, y_pred)
 
-                    # Log metrics
-                    mlflow.log_metric("RMSE", rmse)
-                    mlflow.log_metric("MAE", mae)
-                    mlflow.log_metric("R2", r2)
+                # Log metrics
+                mlflow.log_metric("RMSE", rmse)
+                mlflow.log_metric("MAE", mae)
+                mlflow.log_metric("R2", r2)
 
-                    st.success(f"✅ Logged Regressor {i}: {model.__class__.__name__}")
-                    st.write(f"**RMSE:** {rmse:.2f} | **MAE:** {mae:.2f} | **R2:** {r2:.2f}")
+                st.success(f"✅ Logged Tuned Model: {tuned_model.__class__.__name__}")
+                st.write(f"**RMSE:** {rmse:.2f} | **MAE:** {mae:.2f} | **R2:** {r2:.2f}")
 
-                mlflow.end_run()
+            mlflow.end_run()
