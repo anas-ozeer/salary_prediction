@@ -11,7 +11,7 @@ df = load_data()
 
 # Sidebar navigation
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Select", ["Introduction", "Data Visualization", "Modeling"])
+page = st.sidebar.radio("Select", ["Introduction", "Data Visualization", "Modeling", "AI Explainability", "Hypperparameter Tuning"])
 
 # Data Exploration Page
 if page == "Introduction":
@@ -125,4 +125,14 @@ elif page == "Data Visualization":
 # Modeling Page
 elif page == "Modeling":
     st.title("Modeling")
+    st.write("This page is under construction. 🤖")
+
+# AI Explainability Page
+elif page == "AI Explainability":
+    st.title("AI Explainability")
+    st.write("This page is under construction. 🤖")
+
+# Hyperparameter Tuning Page        
+elif page == "Hypperparameter Tuning":
+    st.title("Hyperparameter Tuning")
     st.write("This page is under construction. 🤖")
