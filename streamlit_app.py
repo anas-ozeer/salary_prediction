@@ -153,50 +153,41 @@ elif page == "AI Explainability":
 
 # HYPERPARAMETER TUNING
 elif page == "Hyperparameter Tuning":
-    st.title("🤖 Hyperparameter Tuning with XGBoost + PyCaret + MLflow via DAGsHub")
+    st.title("🤖 Hyperparameter Tuning with PyCaret + MLflow via DAGsHub")
 
-    # Train-test split
+    # Split data
     salary_train, salary_test = train_test_split(dfnew, test_size=0.2, random_state=42)
 
-    # DAGsHub MLflow Integration
+    # Trigger DAGsHub MLflow integration only once
     dagshub.init(repo_owner='anas-ozeer', repo_name='salary_prediction', mlflow=True)
 
-    # Button to trigger tuning
-    if st.button("🚀 Run XGBoost Hyperparameter Tuning & Log to MLflow"):
-        with st.spinner("Training and logging XGBoost model..."):
+    if st.button("🚀 Run XGBoost Tuning & Log to MLflow"):
+        with st.spinner("Running XGBoost tuning..."):
+            # Setup PyCaret with MLflow logging
+            setup(data=salary_train,
+                  target='avg_salary',
+                  session_id=42,
+                  log_experiment=True,
+                  experiment_name="xgboost_tuning",
+                  use_gpu=False,  # optional
+                  verbose=False)
 
-            # PyCaret setup
-            reg1 = setup(data=salary_train, target='avg_salary', session_id=42, verbose=False, log_experiment=True, experiment_name="xgboost_tuning")
-
-            # Create XGBoost model
+            # Tune only XGBoost
             xgb_model = create_model('xgboost')
-
-            # Tune hyperparameters
             tuned_xgb = tune_model(xgb_model, optimize='R2')
 
-            # Predict on test set
-            y_test = salary_test["avg_salary"]
+            # Finalize model
+            final_model = finalize_model(tuned_xgb)
+
+            # Evaluate on test set
             X_test = salary_test.drop("avg_salary", axis=1)
-            predictions = predict_model(tuned_xgb, data=X_test)
+            y_test = salary_test["avg_salary"]
+            y_pred = predict_model(final_model, data=X_test)
 
-            # Evaluate metrics manually
-            from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-            rmse = mean_squared_error(y_test, predictions["Label"], squared=False)
-            mae = mean_absolute_error(y_test, predictions["Label"])
-            r2 = r2_score(y_test, predictions["Label"])
+            # Calculate metrics manually for display
+            r2 = r2_score(y_test, y_pred['Label'])
+            mae = mean_absolute_error(y_test, y_pred['Label'])
+            rmse = mean_squared_error(y_test, y_pred['Label'], squared=False)
 
-            # Log metrics
-            with mlflow.start_run(run_name="Tuned XGBoost"):
-                mlflow.sklearn.log_model(tuned_xgb, "xgboost_model")
-                mlflow.log_metric("RMSE", rmse)
-                mlflow.log_metric("MAE", mae)
-                mlflow.log_metric("R2", r2)
-
-                for k, v in tuned_xgb.get_params().items():
-                    mlflow.log_param(k, v)
-
-            mlflow.end_run()
-
-            # Display results
-            st.success("✅ XGBoost Model Tuned and Logged to MLflow")
+            st.success("✅ XGBoost tuning and logging completed!")
             st.write(f"**RMSE:** {rmse:.2f} | **MAE:** {mae:.2f} | **R2:** {r2:.2f}")
