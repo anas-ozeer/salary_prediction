@@ -1,5 +1,9 @@
 import streamlit as st
 import pandas as pd
+import os
+import mlflow
+from pycaret.regression import setup, compare_models, tune_model, pull
+import streamlit as st
 
 # Load the dataset
 @st.cache_data
@@ -134,5 +138,51 @@ elif page == "AI Explainability":
 
 # Hyperparameter Tuning Page        
 elif page == "Hypperparameter Tuning":
-    st.title("Hyperparameter Tuning")
-    st.write("This page is under construction. 🤖")
+    st.title("🤖 Hyperparameter Tuning with PyCaret + MLflow via DAGsHub")
+
+    from pycaret.regression import setup, compare_models, tune_model, pull
+    import dagshub
+    import mlflow
+
+    # Initialize DAGsHub logging
+    dagshub.init(repo_owner='anas-ozeer', repo_name='salary_prediction', mlflow=True)
+
+    st.markdown("We’re running multiple regression models and tuning the best one. Everything is logged to DAGsHub with MLflow.")
+
+    # Prepare dataset
+    df_model = df.dropna()  # Make sure there are no missing values
+    target_column = 'avg_salary'
+
+    if st.button("🚀 Run PyCaret Pipeline"):
+        with st.spinner("Training and tuning models..."):
+            # Setup PyCaret
+            reg_setup = setup(
+                data=df_model,
+                target=target_column,
+                session_id=42,
+                log_experiment=True,
+                experiment_name="salary_regression",
+                silent=True,
+                verbose=False
+            )
+
+            # Compare models
+            best_model = compare_models()
+            st.success("✅ Best Model Found!")
+
+            # Show leaderboard
+            leaderboard_df = pull()
+            st.dataframe(leaderboard_df)
+
+            # Tune best model
+            tuned_model = tune_model(best_model)
+            st.success("✅ Tuned Best Model")
+
+            # Pull tuned model metrics
+            metrics_df = pull()
+            st.subheader("📊 Tuned Model Performance")
+            st.dataframe(metrics_df)
+
+            st.markdown("🔗 [View Full Logs on DAGsHub](https://dagshub.com/anas-ozeer/salary_prediction/experiments)")
+    else:
+        st.info("Click the button to run model comparison and hyperparameter tuning.")
