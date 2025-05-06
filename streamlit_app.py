@@ -209,6 +209,14 @@ elif page == "AI Explainability":
     shap_values = explainer(X_train)
 
     st_shap(shap.plots.waterfall(shap_values[0]), height=500)
+    # Add a horizontal line separator
+    st.markdown("---")
+    st.subheader("SHAP Summary Plot")
+
+    # Display SHAP summary plot for overall feature importance
+    # This plot gives a global view of which features impact predictions the most
+    st_shap(shap.plots.beeswarm(shap_values), height=500)
+
 
 
 # Hyperparameter Tuning Page        
