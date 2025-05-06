@@ -44,6 +44,7 @@ if page == "Introduction":
     """)
     st.subheader("Dataset Overview")
     st.dataframe(df.head())
+    st.write(f"Dataset contains {df.shape[0]} rows and {df.shape[1]} columns.")
 
     st.subheader("Summary Statistics (Numerical Columns)")
     st.write(df.describe())
