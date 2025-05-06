@@ -1,5 +1,22 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn import metrics as sk_metrics
+
+# PyCaret for regression modeling
+from pycaret.regression import setup, compare_models
+
+# MLflow for experiment tracking
+import mlflow
+import mlflow.sklearn
+
+# DAGsHub integration for MLflow logging
+import dagshub
+
+from xgboost import XGBRegressor
+import shap
+from streamlit_shap import st_shap
 
 # Load the dataset
 @st.cache_data
@@ -129,11 +146,11 @@ elif page == "Modeling":
 
 # AI Explainability Page
 elif page == "AI Explainability":
-    import shap
-    from streamlit_shap import st_shap
-    import pandas as pd
-    from xgboost import XGBRegressor
-    from sklearn.model_selection import train_test_split
+    # import shap
+    # from streamlit_shap import st_shap
+    # import pandas as pd
+    # from xgboost import XGBRegressor
+    # from sklearn.model_selection import train_test_split
 
     st.title("AI Explainability")
     st.write("Below is an explanation of the model's predictions using SHAP values. 🤖")
