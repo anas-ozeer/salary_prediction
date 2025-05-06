@@ -3,76 +3,77 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn import metrics as sk_metrics
-
-# PyCaret for regression modeling
 from pycaret.regression import setup, compare_models
-
-# MLflow for experiment tracking
 import mlflow
 import mlflow.sklearn
-
-# DAGsHub integration for MLflow logging
 import dagshub
-
 from xgboost import XGBRegressor
 import shap
 from streamlit_shap import st_shap
 
-# Load the dataset
 @st.cache_data
 def load_data():
-    df = pd.read_csv('salary_data_cleaned.csv')
-    return df
-
-df = load_data()
+    return pd.read_csv('salary_data_cleaned.csv')
 
 # Sidebar navigation
 st.sidebar.title("Navigation")
 page = st.sidebar.radio("Select", ["Introduction", "Data Visualization", "Modeling", "AI Explainability", "Hyperparameter Tuning"])
 
-# Data Exploration Page
+df = load_data()
+dfnew = df[['python_yn','Size','Revenue','job_state','Type of ownership','avg_salary']]
+
+size_map = {"1 to 50 employees": 25, "51 to 200 employees": 125, "201 to 500 employees": 350, "501 to 1000 employees": 750,
+            "1001 to 5000 employees": 3000, "5001 to 10000 employees": 7500, "10000+ employees": 15000}
+rev_map = {"Less than $1 million (USD)": 5e5, "$1 to $5 million (USD)": 2.5e6, "$5 to $10 million (USD)": 7.5e6,
+            "$10 to $25 million (USD)": 1.75e7, "$25 to $50 million (USD)": 3.75e7, "$50 to $100 million (USD)": 7.5e7,
+            "$100 to $500 million (USD)": 2.5e8, "$500 million to $1 billion (USD)": 7.5e8, "$1 to $2 billion (USD)": 1.5e9,
+            "$2 to $5 billion (USD)": 3.5e9, "$5 to $10 billion (USD)": 7.5e9, "$10+ billion (USD)": 1.5e10}
+state_map = {' KS': 1, ' NE': 1, ' OK': 1, ' MO': 1, ' IA': 1, ' AR': 1, ' IL': 2, ' IN': 2, ' KY': 2, ' CO': 2, 
+                ' SD': 2, ' MN': 2, ' TX': 2, ' TN': 2, ' WI': 3, ' MI': 3, ' OH': 3, ' MS': 3, ' ND': 3, ' NM': 3, 
+                ' WY': 3, ' GA': 4, ' AL': 4, ' PA': 4, ' NC': 4, ' SC': 4, ' LA': 4, ' MT': 4, ' AZ': 4, ' WV': 4,
+                ' NY': 5, ' NJ': 5, ' CA': 5, ' FL': 5, ' WA': 5, ' OR': 5, ' MA': 5, ' CT': 5, ' RI': 5, ' NH': 5,
+                ' ME': 5, ' DE': 5, ' MD': 5, ' VT': 5, ' NV': 5, ' UT': 5, ' ID': 5}
+owner_map = {"Company - Private": 2, "Company - Public": 1, "Nonprofit Organization": 0,
+                "Subsidiary or Business Segment": 2, "Government": 1, "Hospital": 2,
+                "College / University": 1, "Other Organization": 1, "School / School District": 1}
+
+
+dfnew['Size'] = dfnew['Size'].map(size_map)
+dfnew['Revenue'] = dfnew['Revenue'].map(rev_map).fillna(0)
+dfnew['job_state'] = dfnew['job_state'].map(state_map).fillna(0)
+dfnew['Type of ownership'] = dfnew['Type of ownership'].map(owner_map)
+dfnew.dropna(inplace=True)
+
+# INTRODUCTION
 if page == "Introduction":
     st.title("📊 Job Postings Data Analysis App")
 
     st.markdown("""
     👋 **Welcome to the Job Postings Data Analysis App!**
 
-    This interactive tool is built to explore a rich dataset of Data Science job postings — and more importantly, to understand **what drives salaries** in the field.  
-    By analyzing patterns across industries, company types, job requirements, and locations, we aim to answer a central question:
+    This tool explores a dataset of Data Science job postings to understand **what drives salaries**.
 
-    ### 💡 *What factors most influence a data scientist’s salary — and can we predict it accurately based on those features?*
-
-    ---
-
-    ### 🔍 Through this app, we explore:
-    - **Which company sizes** (startups, mid-size, large enterprises) are hiring data scientists most actively  
-    - **Which sectors and industries** are investing heavily in data science talent  
-    - **How skill requirements differ** between startups and established companies  
-    - **Which U.S. locations** tend to offer **the highest salaries** for data scientists  
-
-    As you navigate through filters and visualizations, you’ll see how these variables relate to salary.
+    ### 💡 *What factors most influence a data scientist’s salary — and can we predict it accurately?*
 
     ---
 
-    ### 🤖 And at the core of it all:
-    We’re building a **machine learning model** that uses these variables — such as average salary, location, company size, company type and more — to **predict the expected salary** for a given job posting.
+    ### 🔍 We explore:
+    - Which **company sizes**, **industries**, **skills**, and **locations** affect salary
+    - Building an ML model to **predict salary** from job features
 
-    In short, this project is about turning job market data into actionable salary insights using data science itself.
+    --- 
     """)
+
     st.subheader("Dataset Overview")
     st.dataframe(df.head())
-    st.write(f"Dataset contains {df.shape[0]} rows and {df.shape[1]} columns.")
+    st.write(f"Dataset has {df.shape[0]} rows and {df.shape[1]} columns.")
 
     st.subheader("Summary Statistics (Numerical Columns)")
     st.write(df.describe())
 
-    # st.subheader("Missing Values Per Column")
-    # missing = df.isnull().sum()
-    # st.write(missing[missing > 0].sort_values(ascending=False))
-
     st.subheader("Unique Values in Categorical Columns")
-    cols = df.select_dtypes(include='object').columns
-    for col in cols:
+    cat_cols = df.select_dtypes(include='object').columns
+    for col in cat_cols:
         st.write(f"**{col}**: {df[col].nunique()} unique values")
 
     st.subheader("Top 10 Job Titles")
@@ -91,159 +92,70 @@ if page == "Introduction":
         st.subheader("Salary Statistics")
         st.write(df['salary'].describe())
 
-    # Optional filtering
-    # Filters inside the page
+    # Filters
     with st.expander("🔍 Filter Options"):
         col1, col2 = st.columns(2)
+        selected_industries = col1.multiselect("Select Industry", df['Industry'].dropna().unique())
+        selected_locations = col2.multiselect("Select Location", df['Location'].dropna().unique())
 
-        with col1:
-            selected_industries = st.multiselect(
-                "Select Industry:",
-                options=df['Industry'].dropna().unique(),
-                key="industry_filter"
-            )
+        filtered_df = df.copy()
+        if selected_industries:
+            filtered_df = filtered_df[filtered_df['Industry'].isin(selected_industries)]
+        if selected_locations:
+            filtered_df = filtered_df[filtered_df['Location'].isin(selected_locations)]
 
-        with col2:
-            selected_locations = st.multiselect(
-                "Select Location:",
-                options=df['Location'].dropna().unique(),
-                key="location_filter"
-            )
+        st.subheader("Filtered Job Postings")
+        st.write(f"Total jobs found: {filtered_df.shape[0]}")
+        st.dataframe(filtered_df.head(20))
 
-
-    filtered_df = df.copy()
-
-    if selected_industries:
-        filtered_df = filtered_df[filtered_df['Industry'].isin(selected_industries)]
-
-    if selected_locations:
-        filtered_df = filtered_df[filtered_df['Location'].isin(selected_locations)]
-
-    # Show filtered results
-    st.subheader("Filtered Job Postings")
-    st.write(f"Total jobs found: {filtered_df.shape[0]}")
-    st.dataframe(filtered_df.head(20))
-
-
-
-# Data Visualization Page
+# DATA VISUALIZATION
 elif page == "Data Visualization":
     st.title("Data Visualization")
     import streamlit.components.v1 as components
+    components.iframe(src="https://lookerstudio.google.com/embed/reporting/4836b76b-fc1b-4563-a492-3ba2a915ecd8/page/bpRIF", height=600, width=1000)
 
-    # Your Looker Studio dashboard URL
-    looker_dashboard_url = "https://lookerstudio.google.com/embed/reporting/4836b76b-fc1b-4563-a492-3ba2a915ecd8/page/bpRIF"
-
-    # Embed Looker dashboard
-    components.iframe(src=looker_dashboard_url, height=600, width=1000)
-
-
-
-# Modeling Page
+# MODELING
 elif page == "Modeling":
     st.title("Modeling")
     st.write("This page is under construction. 🤖")
 
+# AI EXPLAINABILITY
 elif page == "AI Explainability":
-
-    from xgboost import XGBRegressor
-
     st.title("🔍 AI Explainability")
-    st.write("Below is an explanation of the model's predictions using SHAP values. 🤖")
+    st.write("Explaining model predictions using SHAP values.")
 
-    # Load and preprocess the data
-    df = pd.read_csv('salary_data_cleaned.csv')
-    dfnew = df[['python_yn','Size','Revenue','job_state','Type of ownership','avg_salary']]
 
-    size_mapping = {
-        "1 to 50 employees": 25, "51 to 200 employees": 125, "201 to 500 employees": 350,
-        "501 to 1000 employees": 750, "1001 to 5000 employees": 3000,
-        "5001 to 10000 employees": 7500, "10000+ employees": 15000
-    }
-    dfnew['Size'] = dfnew['Size'].map(size_mapping)
-
-    revenue_mapping = {
-        "Less than $1 million (USD)": 500000, "$1 to $5 million (USD)": 2500000,
-        "$5 to $10 million (USD)": 7500000, "$10 to $25 million (USD)": 17500000,
-        "$25 to $50 million (USD)": 37500000, "$50 to $100 million (USD)": 75000000,
-        "$100 to $500 million (USD)": 250000000, "$500 million to $1 billion (USD)": 750000000,
-        "$1 to $2 billion (USD)": 1500000000, "$2 to $5 billion (USD)": 3500000000,
-        "$5 to $10 billion (USD)": 7500000000, "$10+ billion (USD)": 15000000000
-    }
-    dfnew['Revenue'] = dfnew['Revenue'].map(revenue_mapping).fillna(0)
-
-    state_to_distance_label = {
-        ' KS': 1, ' NE': 1, ' OK': 1, ' MO': 1, ' IA': 1, ' AR': 1,
-        ' IL': 2, ' IN': 2, ' KY': 2, ' CO': 2, ' SD': 2, ' MN': 2, ' TX': 2, ' TN': 2,
-        ' WI': 3, ' MI': 3, ' OH': 3, ' MS': 3, ' ND': 3, ' NM': 3, ' WY': 3,
-        ' GA': 4, ' AL': 4, ' PA': 4, ' NC': 4, ' SC': 4, ' LA': 4, ' MT': 4, ' AZ': 4, ' WV': 4,
-        ' NY': 5, ' NJ': 5, ' CA': 5, ' FL': 5, ' WA': 5, ' OR': 5, ' MA': 5, ' CT': 5,
-        ' RI': 5, ' NH': 5, ' ME': 5, ' DE': 5, ' MD': 5, ' VT': 5, ' NV': 5, ' UT': 5, ' ID': 5
-    }
-    dfnew['job_state'] = dfnew['job_state'].map(state_to_distance_label).fillna(0)
-
-    ownership_mapping = {
-        "Company - Private": 2, "Company - Public": 1, "Nonprofit Organization": 0,
-        "Subsidiary or Business Segment": 2, "Government": 1, "Hospital": 2,
-        "College / University": 1, "Other Organization": 1, "School / School District": 1,
-    }
-    dfnew['Type of ownership'] = dfnew['Type of ownership'].map(ownership_mapping)
-    dfnew = dfnew.dropna()
-    
     X = dfnew.drop("avg_salary", axis=1)
     y = dfnew["avg_salary"]
-
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
     model = XGBRegressor(n_estimators=50, max_depth=4, learning_rate=0.3)
     model.fit(X_train, y_train)
 
     explainer = shap.Explainer(model, X)
     shap_values = explainer(X)
 
-    st.subheader("Select features for SHAP")
-    selected_features = st.multiselect(
-        "Choose features to include in SHAP summary plot",
-        X.columns.tolist(),
-        default=X.columns.tolist()
-    )
-
+    selected_features = st.multiselect("Choose SHAP features", X.columns.tolist(), default=X.columns.tolist())
     if selected_features:
-        filtered_X = X[selected_features]
-        filtered_shap_values = shap.Explanation(
-            values=shap_values.values[:, [X.columns.get_loc(col) for col in selected_features]],
+        idxs = [X.columns.get_loc(f) for f in selected_features]
+        filtered_shap = shap.Explanation(
+            values=shap_values.values[:, idxs],
             base_values=shap_values.base_values,
-            data=filtered_X.values,
+            data=X[selected_features].values,
             feature_names=selected_features
         )
 
         st.subheader("SHAP Summary Plot")
-        st_shap(shap.plots.beeswarm(filtered_shap_values), height=500)
+        st_shap(shap.plots.beeswarm(filtered_shap), height=500)
 
-        st.markdown("---")
-        st.subheader("SHAP Dependence Plot")
-        feature = st.selectbox("Feature for dependence plot", selected_features)
-        st.markdown(f"*SHAP Dependence Plot for ⁠ {feature} ⁠*")
-        st_shap(shap.plots.scatter(filtered_shap_values[:, feature], color=filtered_shap_values), height=500)
+        feature = st.selectbox("Dependence plot feature", selected_features)
+        st.subheader(f"SHAP Dependence Plot: {feature}")
+        st_shap(shap.plots.scatter(filtered_shap[:, feature], color=filtered_shap), height=500)
 
-# Hyperparameter Tuning Page        
+# HYPERPARAMETER TUNING
 elif page == "Hyperparameter Tuning":
     st.title("🤖 Hyperparameter Tuning with PyCaret + MLflow via DAGsHub")
-
-    st.markdown("""
-    In this section, we will:
-    - Run **PyCaret's model comparison** to select the best 3 models
-    - **Log each model** to **DAGsHub MLflow** with hyperparameters and performance metrics  
-    - Tune and evaluate models only when the button is clicked
-    """)
-
-    # Load and clean the dataset
-    df = load_data()
-    df_hp = df.dropna(subset=["avg_salary"])
-    df_hp = df_hp.select_dtypes(include=[np.number])  # Keep only numeric columns
-
     # Train-test split
-    salary_train, salary_test = train_test_split(df_hp, test_size=0.2, random_state=42)
+    salary_train, salary_test = train_test_split(dfnew, test_size=0.2, random_state=42)
 
     # DAGsHub MLflow Integration
     dagshub.init(repo_owner='anas-ozeer', repo_name='salary_prediction', mlflow=True)
