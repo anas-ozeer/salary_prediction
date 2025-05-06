@@ -162,48 +162,66 @@ elif page == "Hyperparameter Tuning":
     dagshub.init(repo_owner='anas-ozeer', repo_name='salary_prediction', mlflow=True)
 
     # Button to trigger tuning
-    if st.button("🚀 Run Hyperparameter Tuning & Log to MLflow"):
-        with st.spinner("Training and logging top models..."):
-            # PyCaret setup
-            from pycaret.regression import setup, tune_model, compare_models
+if st.button("🚀 Run Hyperparameter Tuning & Log to MLflow"):
+    with st.spinner("Training and logging top models..."):
+        # PyCaret setup
+        from pycaret.regression import setup, tune_model, compare_models
 
-            # PyCaret setup
-            reg1 = setup(data=salary_train, target='avg_salary', session_id=42, verbose=False)
+        # PyCaret setup
+        reg1 = setup(data=salary_train, target='avg_salary', session_id=42, verbose=False)
 
-            # Compare models and select the top model
-            top_model = compare_models(n_select=1)  # Select top model for tuning
+        # Compare models and select the top model
+        top_model = compare_models(n_select=1)  # Select top model for tuning
 
-            # Perform hyperparameter tuning on the selected top model
-            tuned_model = tune_model(top_model)
+        # Custom grid to limit search space (optional)
+        custom_grid = {
+            'max_depth': [3, 5, 7],
+            'learning_rate': [0.01, 0.1],
+            'n_estimators': [50, 100]
+        }
 
-            # Log the tuned model and its parameters using MLflow
-            with mlflow.start_run(run_name=f"Tuned Model: {tuned_model.__class__.__name__}"):
-                model_name = "tuned_regressor_model"
-                
-                # Log model
-                mlflow.sklearn.log_model(tuned_model, model_name)
+        # Perform hyperparameter tuning
+        tuned_model = tune_model(
+            top_model,
+            n_iter=5,  # Limit number of iterations
+            custom_grid=custom_grid,  # Optional: Use a smaller search space
+            optimize='R2',  # Optimize for R2 or other metric
+            early_stopping=True,  # Enable early stopping
+            early_stopping_max_iters=5,  # Set a limit on the number of iterations
+            search_algorithm='random',  # Use random search (faster)
+        )
 
-                # Log parameters
-                params = tuned_model.get_params()
-                for key, value in params.items():
-                    mlflow.log_param(key, value)
+        # Perform hyperparameter tuning on the selected top model
+        # tuned_model = tune_model(top_model)
 
-                # Predict and evaluate
-                y_test = salary_test["avg_salary"]
-                X_test = salary_test.drop("avg_salary", axis=1)
-                y_pred = tuned_model.predict(X_test)
+        # Log the tuned model and its parameters using MLflow
+        with mlflow.start_run(run_name=f"Tuned Model: {tuned_model.__class__.__name__}"):
+            model_name = "tuned_regressor_model"
+            
+            # Log model
+            mlflow.sklearn.log_model(tuned_model, model_name)
 
-                # Calculate regression metrics
-                rmse = sk_metrics.mean_squared_error(y_test, y_pred, squared=False)
-                mae = sk_metrics.mean_absolute_error(y_test, y_pred)
-                r2 = sk_metrics.r2_score(y_test, y_pred)
+            # Log parameters
+            params = tuned_model.get_params()
+            for key, value in params.items():
+                mlflow.log_param(key, value)
 
-                # Log metrics
-                mlflow.log_metric("RMSE", rmse)
-                mlflow.log_metric("MAE", mae)
-                mlflow.log_metric("R2", r2)
+            # Predict and evaluate
+            y_test = salary_test["avg_salary"]
+            X_test = salary_test.drop("avg_salary", axis=1)
+            y_pred = tuned_model.predict(X_test)
 
-                st.success(f"✅ Logged Tuned Model: {tuned_model.__class__.__name__}")
-                st.write(f"**RMSE:** {rmse:.2f} | **MAE:** {mae:.2f} | **R2:** {r2:.2f}")
+            # Calculate regression metrics
+            rmse = sk_metrics.mean_squared_error(y_test, y_pred, squared=False)
+            mae = sk_metrics.mean_absolute_error(y_test, y_pred)
+            r2 = sk_metrics.r2_score(y_test, y_pred)
 
-            mlflow.end_run()
+            # Log metrics
+            mlflow.log_metric("RMSE", rmse)
+            mlflow.log_metric("MAE", mae)
+            mlflow.log_metric("R2", r2)
+
+            st.success(f"✅ Logged Tuned Model: {tuned_model.__class__.__name__}")
+            st.write(f"**RMSE:** {rmse:.2f} | **MAE:** {mae:.2f} | **R2:** {r2:.2f}")
+
+        mlflow.end_run()
