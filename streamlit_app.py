@@ -149,68 +149,61 @@ elif page == "Hyperparameter Tuning":
     st.title("🤖 Hyperparameter Tuning with PyCaret + MLflow via DAGsHub")
 
     st.markdown("""
-    In this section, we perform **hyperparameter tuning** using **PyCaret**, 
-    and log model results and parameters to **DAGsHub via MLflow**.
+    In this section, we will:
+    - Run **PyCaret's model comparison** to select the best 3 models
+    - **Log each model** to **DAGsHub MLflow** with hyperparameters and performance metrics  
+    - Tune and evaluate models only when the button is clicked
     """)
 
-    # Initialize DAGsHub <--> MLflow integration
-    dagshub.init(repo_owner='anas-ozeer', repo_name='salary_prediction', mlflow=True)
-    mlflow.autolog()
-
-    # Load and clean data
+    # Load and clean the dataset
     df = load_data()
     df_hp = df.dropna(subset=["avg_salary"])
-    df_hp = df_hp.select_dtypes(include=[np.number])
+    df_hp = df_hp.select_dtypes(include=[np.number])  # Keep only numeric columns
+
+    # Train-test split
     salary_train, salary_test = train_test_split(df_hp, test_size=0.2, random_state=42)
 
-    # Model selection dropdown
-    model_choice = st.selectbox(
-        "Select Model for Tuning",
-        options=["Linear Regression", "Random Forest", "XGBoost", "LightGBM", "Ridge", "Lasso"]
-    )
+    # DAGsHub MLflow Integration
+    dagshub.init(repo_owner='anas-ozeer', repo_name='salary_prediction', mlflow=True)
 
-    run_tuning = st.button("Run Hyperparameter Tuning")
+    # Button to trigger tuning
+    if st.button("🚀 Run Hyperparameter Tuning & Log to MLflow"):
+        with st.spinner("Training and logging top models..."):
+            # PyCaret setup
+            reg1 = setup(data=salary_train, target='avg_salary', session_id=42, verbose=False)
 
-    if run_tuning:
-        with st.spinner("Tuning model... please wait ⏳"):
-            # Setup and model map
-            setup(data=salary_train, target='avg_salary', session_id=42, verbose=False)
+            # Select top 3 models
+            top3 = compare_models(n_select=3)
 
-            model_map = {
-                "Linear Regression": "lr",
-                "Random Forest": "rf",
-                "XGBoost": "xgboost",
-                "LightGBM": "lightgbm",
-                "Ridge": "ridge",
-                "Lasso": "lasso"
-            }
+            # Evaluate and log each model
+            for i, model in enumerate(top3, 1):
+                with mlflow.start_run(run_name=f"Regressor {i}: {model.__class__.__name__}"):
+                    model_name = f"regressor_model_{i}"
 
-            with mlflow.start_run(run_name=f"Tuned {model_choice}"):
-                base_model = create_model(model_map[model_choice])
-                tuned_model = tune_model(base_model)
+                    # Log model
+                    mlflow.sklearn.log_model(model, model_name)
 
-                # Evaluate
-                X_test = salary_test.drop("avg_salary", axis=1)
-                y_test = salary_test["avg_salary"]
-                y_pred = predict_model(tuned_model, data=X_test)['Label']
+                    # Log parameters
+                    params = model.get_params()
+                    for key, value in params.items():
+                        mlflow.log_param(key, value)
 
-                rmse = sk_metrics.mean_squared_error(y_test, y_pred, squared=False)
-                mae = sk_metrics.mean_absolute_error(y_test, y_pred)
-                r2 = sk_metrics.r2_score(y_test, y_pred)
+                    # Predict and evaluate
+                    y_test = salary_test["avg_salary"]
+                    X_test = salary_test.drop("avg_salary", axis=1)
+                    y_pred = model.predict(X_test)
 
-                mlflow.log_metric("RMSE", rmse)
-                mlflow.log_metric("MAE", mae)
-                mlflow.log_metric("R2", r2)
+                    # Calculate regression metrics
+                    rmse = sk_metrics.mean_squared_error(y_test, y_pred, squared=False)
+                    mae = sk_metrics.mean_absolute_error(y_test, y_pred)
+                    r2 = sk_metrics.r2_score(y_test, y_pred)
 
-                # Output to user
-                st.success("✅ Tuning complete!")
-                st.subheader(f"Tuned {model_choice} Model Summary")
-                st.write(tuned_model)
+                    # Log metrics
+                    mlflow.log_metric("RMSE", rmse)
+                    mlflow.log_metric("MAE", mae)
+                    mlflow.log_metric("R2", r2)
 
-                st.subheader("Hyperparameter Tuning Results")
-                st.write(f"RMSE: {rmse}")
-                st.write(f"MAE: {mae}")
-                st.write(f"R2: {r2}")
+                    st.success(f"✅ Logged Regressor {i}: {model.__class__.__name__}")
+                    st.write(f"**RMSE:** {rmse:.2f} | **MAE:** {mae:.2f} | **R2:** {r2:.2f}")
 
-                st.write("Tuned Model Parameters:")
-                st.write(tuned_model.get_params())
+                mlflow.end_run()
