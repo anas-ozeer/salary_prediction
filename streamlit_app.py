@@ -188,7 +188,7 @@ elif page == "Hyperparameter Tuning":
                     y_pred = model.predict(X_test)
 
                     # Calculate regression metrics
-                    rmse = sk_metrics.root_mean_squared_error(y_test, y_pred, squared=False)
+                    rmse = sk_metrics.root_mean_squared_error(y_test, y_pred)
                     mae = sk_metrics.mean_absolute_error(y_test, y_pred)
                     r2 = sk_metrics.r2_score(y_test, y_pred)
 
