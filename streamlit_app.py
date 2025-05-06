@@ -18,7 +18,7 @@ df = load_data()
 
 # Sidebar navigation
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Select", ["Introduction", "Data Visualization", "Modeling", "AI Explainability", "Hypperparameter Tuning"])
+page = st.sidebar.radio("Select", ["Introduction", "Data Visualization", "Modeling", "AI Explainability", "Hyperparameter Tuning"])
 
 # Data Exploration Page
 if page == "Introduction":
@@ -140,7 +140,7 @@ elif page == "AI Explainability":
     st.write("This page is under construction. 🤖")
 
 # Hyperparameter Tuning Page        
-elif page == "Hypperparameter Tuning":
+elif page == "Hyperparameter Tuning":
     st.title("🤖 Hyperparameter Tuning with PyCaret + MLflow via DAGsHub")
 
     # Initialize DAGsHub logging
@@ -161,7 +161,6 @@ elif page == "Hypperparameter Tuning":
                 session_id=42,
                 log_experiment=True,
                 experiment_name="salary_regression",
-                silent=True,
                 verbose=False
             )
 
