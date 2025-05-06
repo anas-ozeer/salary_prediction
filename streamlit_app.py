@@ -144,59 +144,87 @@ elif page == "Modeling":
     st.title("Modeling")
     st.write("This page is under construction. 🤖")
 
-# AI Explainability Page
 elif page == "AI Explainability":
 
-    st.title("🔍 Explainable AI")
-    st.markdown("Understand model behavior using SHAP (SHapley Additive Explanations).")
+    from xgboost import XGBRegressor
 
-    # Make sure model and dfnew are already defined earlier in your app
-    # Load the dataset
-    df = load_data()
-    dfnew = df.select_dtypes(include=[np.number])
-    # Define features (X) and target (y)
+    st.title("🔍 AI Explainability")
+    st.write("Below is an explanation of the model's predictions using SHAP values. 🤖")
+
+    # Load and preprocess the data
+    df = pd.read_csv('salary_data_cleaned.csv')
+    dfnew = df[['python_yn','Size','Revenue','job_state','Type of ownership','avg_salary']]
+
+    size_mapping = {
+        "1 to 50 employees": 25, "51 to 200 employees": 125, "201 to 500 employees": 350,
+        "501 to 1000 employees": 750, "1001 to 5000 employees": 3000,
+        "5001 to 10000 employees": 7500, "10000+ employees": 15000
+    }
+    dfnew['Size'] = dfnew['Size'].map(size_mapping)
+
+    revenue_mapping = {
+        "Less than $1 million (USD)": 500000, "$1 to $5 million (USD)": 2500000,
+        "$5 to $10 million (USD)": 7500000, "$10 to $25 million (USD)": 17500000,
+        "$25 to $50 million (USD)": 37500000, "$50 to $100 million (USD)": 75000000,
+        "$100 to $500 million (USD)": 250000000, "$500 million to $1 billion (USD)": 750000000,
+        "$1 to $2 billion (USD)": 1500000000, "$2 to $5 billion (USD)": 3500000000,
+        "$5 to $10 billion (USD)": 7500000000, "$10+ billion (USD)": 15000000000
+    }
+    dfnew['Revenue'] = dfnew['Revenue'].map(revenue_mapping).fillna(0)
+
+    state_to_distance_label = {
+        ' KS': 1, ' NE': 1, ' OK': 1, ' MO': 1, ' IA': 1, ' AR': 1,
+        ' IL': 2, ' IN': 2, ' KY': 2, ' CO': 2, ' SD': 2, ' MN': 2, ' TX': 2, ' TN': 2,
+        ' WI': 3, ' MI': 3, ' OH': 3, ' MS': 3, ' ND': 3, ' NM': 3, ' WY': 3,
+        ' GA': 4, ' AL': 4, ' PA': 4, ' NC': 4, ' SC': 4, ' LA': 4, ' MT': 4, ' AZ': 4, ' WV': 4,
+        ' NY': 5, ' NJ': 5, ' CA': 5, ' FL': 5, ' WA': 5, ' OR': 5, ' MA': 5, ' CT': 5,
+        ' RI': 5, ' NH': 5, ' ME': 5, ' DE': 5, ' MD': 5, ' VT': 5, ' NV': 5, ' UT': 5, ' ID': 5
+    }
+    dfnew['job_state'] = dfnew['job_state'].map(state_to_distance_label).fillna(0)
+
+    ownership_mapping = {
+        "Company - Private": 2, "Company - Public": 1, "Nonprofit Organization": 0,
+        "Subsidiary or Business Segment": 2, "Government": 1, "Hospital": 2,
+        "College / University": 1, "Other Organization": 1, "School / School District": 1,
+    }
+    dfnew['Type of ownership'] = dfnew['Type of ownership'].map(ownership_mapping)
+    dfnew = dfnew.dropna()
+    
     X = dfnew.drop("avg_salary", axis=1)
     y = dfnew["avg_salary"]
 
-    # If train/test split hasn't been done yet, do it here
-    from sklearn.model_selection import train_test_split
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=8)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-    # Retrain the model just to ensure it exists (or reuse a previously trained model)
-    from xgboost import XGBRegressor
-    xgb_model = XGBRegressor(n_estimators=19, learning_rate=0.81, max_depth=6)
-    xgb_model.fit(X_train, y_train)
+    model = XGBRegressor(n_estimators=50, max_depth=4, learning_rate=0.3)
+    model.fit(X_train, y_train)
 
-    # Create SHAP explainer and compute values
-    explainer = shap.Explainer(xgb_model, X)
+    explainer = shap.Explainer(model, X)
     shap_values = explainer(X)
 
-    # Feature selection dropdown for summary plot
     st.subheader("Select features for SHAP")
-    selected_features = st.multiselect("Choose features to display in SHAP summary plot", X.columns.tolist(), default=X.columns.tolist())
-
-    # Prepare filtered SHAP values
-    filtered_X = X[selected_features]
-    filtered_shap_values = shap.Explanation(
-        values=shap_values.values[:, [X.columns.get_loc(col) for col in selected_features]],
-        base_values=shap_values.base_values,
-        data=filtered_X.values,
-        feature_names=selected_features
+    selected_features = st.multiselect(
+        "Choose features to include in SHAP summary plot",
+        X.columns.tolist(),
+        default=X.columns.tolist()
     )
 
-    # Display SHAP Summary Plot
-    st.subheader("SHAP Summary Plot")
-    st_shap(shap.plots.beeswarm(filtered_shap_values), height=500)
+    if selected_features:
+        filtered_X = X[selected_features]
+        filtered_shap_values = shap.Explanation(
+            values=shap_values.values[:, [X.columns.get_loc(col) for col in selected_features]],
+            base_values=shap_values.base_values,
+            data=filtered_X.values,
+            feature_names=selected_features
+        )
 
-    # SHAP Dependence Plot
-    st.markdown("---")
-    st.subheader("SHAP Dependence Plot")
+        st.subheader("SHAP Summary Plot")
+        st_shap(shap.plots.beeswarm(filtered_shap_values), height=500)
 
-    dependence_feature = st.selectbox("Select a feature for dependence plot", selected_features)
-    st.markdown(f"*SHAP Dependence Plot for ⁠ {dependence_feature} ⁠*")
-    st_shap(shap.plots.scatter(filtered_shap_values[:, dependence_feature], color=filtered_shap_values), height=500)
-
-
+        st.markdown("---")
+        st.subheader("SHAP Dependence Plot")
+        feature = st.selectbox("Feature for dependence plot", selected_features)
+        st.markdown(f"*SHAP Dependence Plot for ⁠ {feature} ⁠*")
+        st_shap(shap.plots.scatter(filtered_shap_values[:, feature], color=filtered_shap_values), height=500)
 
 # Hyperparameter Tuning Page        
 elif page == "Hyperparameter Tuning":
