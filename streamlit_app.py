@@ -4,6 +4,9 @@ import os
 import mlflow
 from pycaret.regression import setup, compare_models, tune_model, pull
 import streamlit as st
+from pycaret.regression import setup, compare_models, tune_model, pull
+import dagshub
+import mlflow
 
 # Load the dataset
 @st.cache_data
@@ -139,10 +142,6 @@ elif page == "AI Explainability":
 # Hyperparameter Tuning Page        
 elif page == "Hypperparameter Tuning":
     st.title("🤖 Hyperparameter Tuning with PyCaret + MLflow via DAGsHub")
-
-    from pycaret.regression import setup, compare_models, tune_model, pull
-    import dagshub
-    import mlflow
 
     # Initialize DAGsHub logging
     dagshub.init(repo_owner='anas-ozeer', repo_name='salary_prediction', mlflow=True)
