@@ -194,26 +194,34 @@ elif page == "Hyperparameter Tuning":
                 mlflow.end_run()
 
             # Pick the best of the top 3
-            best_model = top3_models[0]
+            # Find model with highest R2 on test set
+            best_model = max(top3_models, key=lambda model: sk_metrics.r2_score(
+                salary_test["avg_salary"], model.predict(salary_test.drop("avg_salary", axis=1))
+            ))
 
-            st.subheader("🎯 Hyperparameter Tuning on Top 1 Model")
+            st.subheader("🎯 Hyperparameter Tuning on Best Model")
 
-            # Define custom grid (minimal and fast)
+            # Custom grid to limit search space (optional)
             custom_grid = {
-                'max_depth': [3, 5],
+                'max_depth': [3, 5, 7],
                 'learning_rate': [0.01, 0.1],
-                'n_estimators': [50]
+                'n_estimators': [50, 100]
             }
 
+            # Perform hyperparameter tuning
             tuned_model = tune_model(
                 best_model,
-                n_iter=3,
-                custom_grid=custom_grid,
-                optimize='R2',
-                early_stopping=True,
-                early_stopping_max_iters=3,
-                search_algorithm='random',
-                verbose=False
+                n_iter=5,  # Limit number of iterations
+                custom_grid=custom_grid,  # Optional: Use a smaller search space
+                optimize='R2',  # Optimize for R2 or other metric
+                early_stopping=True,  # Enable early stopping
+                early_stopping_max_iters=5,  # Set a limit on the number of iterations
+                search_library='scikit-learn',  # Use the default library
+                search_algorithm='random',  # Use random search (faster)
+                n_jobs=1,  # Use only one CPU core to minimize resource usage
+                verbose=False,  # Disable verbose logging
+                tuner_verbose=False,  # Disable tuner verbose logging
+                return_tuner=False  # Don't return tuner object
             )
 
             with mlflow.start_run(run_name=f"Tuned Model: {tuned_model.__class__.__name__}"):
