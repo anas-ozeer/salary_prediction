@@ -159,6 +159,9 @@ elif page == "Hyperparameter Tuning":
     # Preprocess dataset (drop missing values or any preprocessing as needed)
     df_hp = df.dropna(subset=["avg_salary"])  # Drop rows with missing target variable
 
+    # remove any non-numeric columns or irrelevant columns for modeling
+    df_hp = df_hp.select_dtypes(include=[np.number])
+    
     # Split dataset into features (X) and target variable (y)
     X = df_hp.drop("avg_salary", axis=1)
     y = df_hp["avg_salary"]
