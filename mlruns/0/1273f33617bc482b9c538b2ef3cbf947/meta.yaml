@@ -1,0 +1,15 @@
+artifact_uri: file:///workspaces/salary_prediction/mlruns/0/1273f33617bc482b9c538b2ef3cbf947/artifacts
+end_time: 1746538522889
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 1273f33617bc482b9c538b2ef3cbf947
+run_name: Tuned Linear Regression
+run_uuid: 1273f33617bc482b9c538b2ef3cbf947
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1746538519929
+status: 3
+tags: []
+user_id: vscode

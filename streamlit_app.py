@@ -149,92 +149,68 @@ elif page == "Hyperparameter Tuning":
     st.title("🤖 Hyperparameter Tuning with PyCaret + MLflow via DAGsHub")
 
     st.markdown("""
-    In this section, we will perform **hyperparameter tuning** using **PyCaret** for regression models. 
-    We'll fine-tune the selected models' hyperparameters and log the results into **MLflow** for tracking and reproducibility.
+    In this section, we perform **hyperparameter tuning** using **PyCaret**, 
+    and log model results and parameters to **DAGsHub via MLflow**.
     """)
 
-    # Load the dataset
-    df = load_data()  # Use the existing function to load the dataset
+    # Initialize DAGsHub <--> MLflow integration
+    dagshub.init(repo_owner='anas-ozeer', repo_name='salary_prediction', mlflow=True)
+    mlflow.autolog()
 
-    # Preprocess dataset (drop missing values or any preprocessing as needed)
-    df_hp = df.dropna(subset=["avg_salary"])  # Drop rows with missing target variable
-
-    # remove any non-numeric columns or irrelevant columns for modeling
+    # Load and clean data
+    df = load_data()
+    df_hp = df.dropna(subset=["avg_salary"])
     df_hp = df_hp.select_dtypes(include=[np.number])
-    
-    # Split dataset into features (X) and target variable (y)
-    X = df_hp.drop("avg_salary", axis=1)
-    y = df_hp["avg_salary"]
-
-    # Split into train/test sets
     salary_train, salary_test = train_test_split(df_hp, test_size=0.2, random_state=42)
 
-    # Initialize PyCaret setup
-    reg1 = setup(data=salary_train, target='avg_salary', session_id=42, verbose=False)
-
-    # Dropdown for model selection
+    # Model selection dropdown
     model_choice = st.selectbox(
         "Select Model for Tuning",
         options=["Linear Regression", "Random Forest", "XGBoost", "LightGBM", "Ridge", "Lasso"]
     )
 
-    # Model tuning based on selected choice
-    if model_choice:
-        if model_choice == "Linear Regression":
-            model = create_model('lr')
-        elif model_choice == "Random Forest":
-            model = create_model('rf')
-        elif model_choice == "XGBoost":
-            model = create_model('xgboost')
-        elif model_choice == "LightGBM":
-            model = create_model('lightgbm')
-        elif model_choice == "Ridge":
-            model = create_model('ridge')
-        elif model_choice == "Lasso":
-            model = create_model('lasso')
+    run_tuning = st.button("Run Hyperparameter Tuning")
 
-        # Tuning the model
-        tuned_model = tune_model(model)
+    if run_tuning:
+        with st.spinner("Tuning model... please wait ⏳"):
+            # Setup and model map
+            setup(data=salary_train, target='avg_salary', session_id=42, verbose=False)
 
-        # Display tuned model summary
-        st.subheader(f"Tuned {model_choice} Model Summary")
-        st.write(tuned_model)
+            model_map = {
+                "Linear Regression": "lr",
+                "Random Forest": "rf",
+                "XGBoost": "xgboost",
+                "LightGBM": "lightgbm",
+                "Ridge": "ridge",
+                "Lasso": "lasso"
+            }
 
-        # Log the tuned model to MLflow
-        with mlflow.start_run(run_name=f"Tuned {model_choice}"):
-            # Log model
-            mlflow.sklearn.log_model(tuned_model, f"{model_choice}_tuned_model")
+            with mlflow.start_run(run_name=f"Tuned {model_choice}"):
+                base_model = create_model(model_map[model_choice])
+                tuned_model = tune_model(base_model)
 
-            # Log parameters
-            params = tuned_model.get_params()
-            for key, value in params.items():
-                mlflow.log_param(key, value)
+                # Evaluate
+                X_test = salary_test.drop("avg_salary", axis=1)
+                y_test = salary_test["avg_salary"]
+                y_pred = predict_model(tuned_model, data=X_test)['Label']
 
-            # Predict using tuned model
-            X_test = salary_test.drop("avg_salary", axis=1)
-            y_test = salary_test["avg_salary"]
-            y_pred = tuned_model.predict(X_test)
+                rmse = sk_metrics.mean_squared_error(y_test, y_pred, squared=False)
+                mae = sk_metrics.mean_absolute_error(y_test, y_pred)
+                r2 = sk_metrics.r2_score(y_test, y_pred)
 
-            # Calculate regression metrics
-            rmse = sk_metrics.mean_squared_error(y_test, y_pred, squared=False)
-            mae = sk_metrics.mean_absolute_error(y_test, y_pred)
-            r2 = sk_metrics.r2_score(y_test, y_pred)
+                mlflow.log_metric("RMSE", rmse)
+                mlflow.log_metric("MAE", mae)
+                mlflow.log_metric("R2", r2)
 
-            # Log metrics
-            mlflow.log_metric("RMSE", rmse)
-            mlflow.log_metric("MAE", mae)
-            mlflow.log_metric("R2", r2)
+                # Output to user
+                st.success("✅ Tuning complete!")
+                st.subheader(f"Tuned {model_choice} Model Summary")
+                st.write(tuned_model)
 
-            # End the MLflow run
-            mlflow.end_run()
+                st.subheader("Hyperparameter Tuning Results")
+                st.write(f"RMSE: {rmse}")
+                st.write(f"MAE: {mae}")
+                st.write(f"R2: {r2}")
 
-        # Display the results of hyperparameter tuning
-        st.subheader("Hyperparameter Tuning Results")
-        st.write(f"RMSE: {rmse}")
-        st.write(f"MAE: {mae}")
-        st.write(f"R2: {r2}")
-
-        st.write("Tuned Model Parameters:")
-        st.write(params)
-
-    st.write("🔧 Adjust the model's hyperparameters and tune the model by selecting different options.")
+                st.write("Tuned Model Parameters:")
+                st.write(tuned_model.get_params())
