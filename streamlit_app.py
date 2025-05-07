@@ -262,7 +262,7 @@ elif page == "AI Explainability":
     
     st.subheader("Correlation Matrix")
     fig, ax = plt.subplots()
-    sns.heatmap(dfnew.corr(), ax=ax)
+    sns.heatmap(dfnew.corr(), ax=ax, cmap='coolwarm', annot=True, fmt=".2f")
     st.pyplot(fig)
     plt.clf()
     X = dfnew.drop("avg_salary", axis=1)
