@@ -262,19 +262,11 @@ elif page == "Hyperparameter Tuning":
 
             st.subheader("🎯 Hyperparameter Tuning on Best Model")
 
-            # Custom grid to limit search space (optional)
-            custom_grid = {
-                'max_depth': [3, 5, 7],
-                'learning_rate': [0.01, 0.1],
-                'n_estimators': [50, 100]
-            }
 
             # Perform hyperparameter tuning
             tuned_model = tune_model(
                 best_model,
-                n_iter=5,  # Limit number of iterations
-                custom_grid=custom_grid,  # Optional: Use a smaller search space
-                optimize='R2',  # Optimize for R2 or other metric
+                n_iter=10,  # Limit number of iterations
                 early_stopping=True,  # Enable early stopping
                 early_stopping_max_iters=5,  # Set a limit on the number of iterations
                 search_library='scikit-learn',  # Use the default library
