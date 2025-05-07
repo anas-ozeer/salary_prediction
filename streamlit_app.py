@@ -119,6 +119,64 @@ elif page == "Modeling":
     st.title("Modeling")
     st.write("This page is under construction. 🤖")
 
+    # Define features and target
+    X = dfnew.drop('avg_salary', axis=1)
+    y = dfnew['avg_salary']
+    
+    # Split into train and test sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15,random_state=8)
+    
+      # Initialize and train XGBoost model
+    xgb_model = XGBRegressor(n_estimators=19, learning_rate=0.81, max_depth=6,)
+    xgb_model.fit(X_train, y_train)
+
+    python_yn = st.slider("Python (0 = No, 1 = Yes)", min_value=0, max_value=1, value=1)
+    size = st.slider("Company Size (e.g., 0 = Small, 5 = Large)", min_value=0, max_value=5, value=3)
+    revenue = st.slider("Revenue Category (e.g., 0 = Low, 5 = High)", min_value=0, max_value=5, value=2)
+
+    python_yn = st.selectbox("Uses Python?", options=["No", "Yes"])
+    python_yn = 1 if python_yn == "Yes" else 0  # Convert to numeric if needed
+    
+    # 2. US State selection
+    us_states = [
+        "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+        "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+        "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+        "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+        "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+    ]
+    job_state = st.selectbox("Job State", options=us_states)
+    
+    # 3. Type of ownership
+    ownership_types = ["Company - Private", "Company - Public", "Government", "Nonprofit Organization"]
+    ownership = st.selectbox("Company Ownership Type", options=ownership_types)
+
+    state_map = {' KS': 1, ' NE': 1, ' OK': 1, ' MO': 1, ' IA': 1, ' AR': 1, ' IL': 2, ' IN': 2, ' KY': 2, ' CO': 2, 
+                ' SD': 2, ' MN': 2, ' TX': 2, ' TN': 2, ' WI': 3, ' MI': 3, ' OH': 3, ' MS': 3, ' ND': 3, ' NM': 3, 
+                ' WY': 3, ' GA': 4, ' AL': 4, ' PA': 4, ' NC': 4, ' SC': 4, ' LA': 4, ' MT': 4, ' AZ': 4, ' WV': 4,
+                ' NY': 5, ' NJ': 5, ' CA': 5, ' FL': 5, ' WA': 5, ' OR': 5, ' MA': 5, ' CT': 5, ' RI': 5, ' NH': 5,
+                ' ME': 5, ' DE': 5, ' MD': 5, ' VT': 5, ' NV': 5, ' UT': 5, ' ID': 5}
+    
+    owner_map = {"Company - Private": 2, "Company - Public": 1, "Nonprofit Organization": 0,
+                "Subsidiary or Business Segment": 2, "Government": 1, "Hospital": 2,
+                "College / University": 1, "Other Organization": 1, "School / School District": 1}
+    
+    # Display the inputs
+    st.write("Selected values:")
+    st.write("Python:", "Yes" if python_yn else "No")
+    st.write("Job State:", job_state)
+    st.write("Ownership:", ownership)
+    
+    inputdatapoint = pd.DataFrame([{
+        'python_yn': python_yn,
+        'Size': size,
+        'Revenue': revenue,
+        'job_state': state_map[job_state],
+        'Type of ownership': owner_map[ownership]
+    }])
+    
+    st.write(xgb_model.predict(inputdatapoint))
+
 # AI EXPLAINABILITY
 elif page == "AI Explainability":
     st.title("🔍 AI Explainability")
