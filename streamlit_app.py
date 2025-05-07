@@ -10,6 +10,9 @@ import dagshub
 from xgboost import XGBRegressor
 import shap
 from streamlit_shap import st_shap
+import os
+
+os.environ["DAGSHUB_TOKEN"] = "a2dd5cc1b8858cf2430c40a71d57f1814389d5fa"
 
 @st.cache_data
 def load_data():
