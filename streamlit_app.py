@@ -299,7 +299,7 @@ elif page == "Hyperparameter Tuning":
     tab1, tab2 = st.tabs(
         [
             "1️⃣ Manual Grid Search",
-            "2️⃣ Browse MLflow Runs",
+            "2️⃣ Model Tuning with PyCaret",
         ]
     )
 
@@ -345,49 +345,61 @@ elif page == "Hyperparameter Tuning":
 
     # -----------------------------------------------------------------------------------
     with tab2:
-        st.header("🔧 Hyperparameter Tuning on Best Model")
+        st.header("🎯 Manual XGBoost Hyperparameter Tuning")
 
-        if "top3_models" not in st.session_state:
-            st.warning("Please run model comparison in Tab 1 first.")
-        else:
-            if st.button("🎯 Run PyCaret Hyperparameter Tuning"):
-                from pycaret.regression import tune_model
+        if st.button("🚀 Run RandomizedSearchCV on XGBoost"):
+            from sklearn.model_selection import RandomizedSearchCV
+            from xgboost import XGBRegressor
 
-                top3_models = st.session_state["top3_models"]
+            X_train = salary_train.drop("avg_salary", axis=1)
+            y_train = salary_train["avg_salary"]
+            X_test = salary_test.drop("avg_salary", axis=1)
+            y_test = salary_test["avg_salary"]
 
-                # Pick best model based on R²
-                best_model = max(top3_models, key=lambda model: sk_metrics.r2_score(
-                    salary_test["avg_salary"], model.predict(salary_test.drop("avg_salary", axis=1))
-                ))
+            param_dist = {
+                'n_estimators': [100, 200, 300, 400, 500],
+                'learning_rate': [0.01, 0.05, 0.1, 0.15, 0.2],
+                'max_depth': [3, 4, 5, 6, 7, 8],
+                'subsample': [0.6, 0.7, 0.8, 0.9, 1.0],
+                'colsample_bytree': [0.6, 0.7, 0.8, 0.9, 1.0],
+                'gamma': [0, 0.1, 0.2, 0.3],
+                'reg_alpha': [0, 0.01, 0.1, 1],
+                'reg_lambda': [0.1, 0.5, 1.0, 1.5]
+            }
 
-                tuned_model = tune_model(
-                    best_model,
-                    n_iter=10,
-                    early_stopping=True,
-                    early_stopping_max_iters=5,
-                    search_library='scikit-learn',
-                    search_algorithm='random',
-                )
+            xgb = XGBRegressor(objective='reg:squarederror', random_state=42, n_jobs=-1)
 
-                with mlflow.start_run(run_name=f"Tuned: {tuned_model.__class__.__name__}"):
-                    mlflow.sklearn.log_model(tuned_model, "tuned_model")
+            search = RandomizedSearchCV(
+                estimator=xgb,
+                param_distributions=param_dist,
+                n_iter=50,
+                scoring='r2',
+                cv=5,
+                verbose=1,
+                n_jobs=-1,
+                random_state=42
+            )
 
-                    params = tuned_model.get_params()
-                    for key, value in params.items():
-                        mlflow.log_param(key, value)
+            with st.spinner("🔍 Tuning XGBoost..."):
+                search.fit(X_train, y_train)
 
-                    y_test = salary_test["avg_salary"]
-                    X_test = salary_test.drop("avg_salary", axis=1)
-                    y_pred = tuned_model.predict(X_test)
+                best_xgb = search.best_estimator_
+                y_pred = best_xgb.predict(X_test)
 
-                    rmse = sk_metrics.mean_squared_error(y_test, y_pred, squared=False)
-                    mae = sk_metrics.mean_absolute_error(y_test, y_pred)
-                    r2 = sk_metrics.r2_score(y_test, y_pred)
+                rmse = sk_metrics.mean_squared_error(y_test, y_pred, squared=False)
+                mae = sk_metrics.mean_absolute_error(y_test, y_pred)
+                r2 = sk_metrics.r2_score(y_test, y_pred)
+
+                with mlflow.start_run(run_name="Tuned XGBoost"):
+                    mlflow.sklearn.log_model(best_xgb, "tuned_xgboost_model")
+
+                    for param, val in search.best_params_.items():
+                        mlflow.log_param(param, val)
 
                     mlflow.log_metric("RMSE", rmse)
                     mlflow.log_metric("MAE", mae)
                     mlflow.log_metric("R2", r2)
 
-                    st.success(f"✅ Tuned and Logged: {tuned_model.__class__.__name__}")
-                    st.write(f"**Tuned Model - RMSE:** {rmse:.2f} | **MAE:** {mae:.2f} | **R2:** {r2:.2f}")
-                mlflow.end_run()
+                st.success("✅ XGBoost Tuning Complete and Logged")
+                st.write(f"**Best Params:** `{search.best_params_}`")
+                st.write(f"**RMSE:** {rmse:.2f} | **MAE:** {mae:.2f} | **R2:** {r2:.2f}")
