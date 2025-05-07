@@ -183,7 +183,7 @@ elif page == "Modeling":
     }])
 
     st.write("Linear Regression Prediction: ") 
-    st.write(linregmodel.predict(inputdatapoint)*1000))
+    st.write(linregmodel.predict(inputdatapoint)*1000)
     
     st.write("XGBoost Prediction: ")
     st.write(gb_model.predict(inputdatapoint)*1000))
