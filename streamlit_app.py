@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn import metrics as sk_metrics
 from pycaret.regression import setup, tune_model, compare_models
@@ -12,7 +14,7 @@ import shap
 from streamlit_shap import st_shap
 import os
 
-os.environ["DAGSHUB_TOKEN"] = "a2dd5cc1b8858cf2430c40a71d57f1814389d5fa"
+# os.environ["DAGSHUB_TOKEN"] = "a2dd5cc1b8858cf2430c40a71d57f1814389d5fa"
 
 @st.cache_data
 def load_data():
@@ -257,7 +259,9 @@ elif page == "AI Explainability":
     st.title("🔍 AI Explainability")
     st.write("Explaining model predictions using SHAP values.")
 
-
+    
+    st.subheader("Correlation Matrix")
+    st.write(sns.heatmap(dfnew.corr()))
     X = dfnew.drop("avg_salary", axis=1)
     y = dfnew["avg_salary"]
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
