@@ -25,27 +25,63 @@ page = st.sidebar.radio("Select", ["Introduction", "Data Visualization", "Modeli
 df = load_data()
 dfnew = df[['python_yn','Size','Revenue','job_state','Type of ownership','avg_salary']]
 
-size_map = {"1 to 50 employees": 25, "51 to 200 employees": 125, "201 to 500 employees": 350, "501 to 1000 employees": 750,
-            "1001 to 5000 employees": 3000, "5001 to 10000 employees": 7500, "10000+ employees": 15000}
-rev_map = {"Less than $1 million (USD)": 5e5, "$1 to $5 million (USD)": 2.5e6, "$5 to $10 million (USD)": 7.5e6,
-            "$10 to $25 million (USD)": 1.75e7, "$25 to $50 million (USD)": 3.75e7, "$50 to $100 million (USD)": 7.5e7,
-            "$100 to $500 million (USD)": 2.5e8, "$500 million to $1 billion (USD)": 7.5e8, "$1 to $2 billion (USD)": 1.5e9,
-            "$2 to $5 billion (USD)": 3.5e9, "$5 to $10 billion (USD)": 7.5e9, "$10+ billion (USD)": 1.5e10}
-state_map = {' KS': 1, ' NE': 1, ' OK': 1, ' MO': 1, ' IA': 1, ' AR': 1, ' IL': 2, ' IN': 2, ' KY': 2, ' CO': 2, 
-                ' SD': 2, ' MN': 2, ' TX': 2, ' TN': 2, ' WI': 3, ' MI': 3, ' OH': 3, ' MS': 3, ' ND': 3, ' NM': 3, 
-                ' WY': 3, ' GA': 4, ' AL': 4, ' PA': 4, ' NC': 4, ' SC': 4, ' LA': 4, ' MT': 4, ' AZ': 4, ' WV': 4,
-                ' NY': 5, ' NJ': 5, ' CA': 5, ' FL': 5, ' WA': 5, ' OR': 5, ' MA': 5, ' CT': 5, ' RI': 5, ' NH': 5,
-                ' ME': 5, ' DE': 5, ' MD': 5, ' VT': 5, ' NV': 5, ' UT': 5, ' ID': 5, ' AK': 5}
-owner_map = {"Company - Private": 2, "Company - Public": 1, "Nonprofit Organization": 0,
-                "Subsidiary or Business Segment": 2, "Government": 1, "Hospital": 2,
-                "College / University": 1, "Other Organization": 1, "School / School District": 1}
+# Create a mapping dictionary
+mapping = {"1 to 50 employees": 25, "51 to 200 employees": 125,"201 to 500 employees":350,
+           "501 to 1000 employees":750,"1001 to 5000 employees":3000,"5001 to 10000 employees":7500,
+           "10000+ employees":15000}
 
+# Apply the mapping to the 'Size' column (replace 'Size' with your actual column name if different)
+dfnew['Size'] = dfnew['Size'].map(mapping)
 
-dfnew['Size'] = dfnew['Size'].map(size_map)
-dfnew['Revenue'] = dfnew['Revenue'].map(rev_map).fillna(0)
-dfnew['job_state'] = dfnew['job_state'].map(state_map).fillna(0)
-dfnew['Type of ownership'] = dfnew['Type of ownership'].map(owner_map)
-dfnew.dropna(inplace=True)
+mapping = {"Less than $1 million (USD)": 500000, "$1 to $5 million (USD)": 2500000,"$5 to $10 million (USD)":7500000,
+           "$10 to $25 million (USD)":17500000,"$25 to $50 million (USD)":37500000,"$50 to $100 million (USD)":75000000,
+           "$100 to $500 million (USD)":250000000,"$500 million to $1 billion (USD)":750000000,"$1 to $2 billion (USD)":1500000000,
+           "$2 to $5 billion (USD)":3500000000,"$5 to $10 billion (USD)":7500000000,"$10+ billion (USD)":15000000000}
+
+dfnew['Revenue'] = dfnew['Revenue'].map(mapping)
+
+dfnew['Revenue'] = dfnew['Revenue'].fillna(0)
+dfnew['Size'] = dfnew['Size'].fillna(0)
+
+state_to_distance_label = {
+    # Tier 1: Central
+    ' KS': 1, ' NE': 1, ' OK': 1, ' MO': 1, ' IA': 1, ' AR': 1,
+
+    # Tier 2: Near-Central
+    ' IL': 2, ' IN': 2, ' KY': 2, ' CO': 2, ' SD': 2, ' MN': 2, ' TX': 2, ' TN': 2,
+
+    # Tier 3: Mid-Distance
+    ' WI': 3, ' MI': 3, ' OH': 3, ' MS': 3, ' ND': 3, ' NM': 3, ' WY': 3,
+
+    # Tier 4: Near-Coastal
+    ' GA': 4, ' AL': 4, ' PA': 4, ' NC': 4, ' SC': 4, ' LA': 4, ' MT': 4, ' AZ': 4, ' WV': 4,
+
+    # Tier 5: Coastal
+    ' NY': 5, ' NJ': 5, ' CA': 5, ' FL': 5, ' WA': 5, ' OR': 5, ' MA': 5, ' CT': 5,
+    ' RI': 5, ' NH': 5, ' ME': 5, ' DE': 5, ' MD': 5, ' VT': 5, ' NV': 5, ' UT': 5, ' ID': 5,
+    ' AK': 5
+}
+
+# Map the states to their labels
+dfnew['job_state'] = dfnew['job_state'].map(state_to_distance_label)
+dfnew['job_state'] = dfnew['job_state'].fillna(0)
+
+# Create a mapping dictionary
+mapping = {
+    "Company - Private": 2,
+    "Company - Public":	1,
+    "Nonprofit Organization":	0,
+    "Subsidiary or Business Segment":	2,
+    "Government":	1,
+    "Hospital":	2,
+    "College / University":	1,
+    "Other Organization":	1,
+    "School / School District":	1,
+}
+
+dfnew['Type of ownership'] = dfnew['Type of ownership'].map(mapping)
+
+dfnew = dfnew.dropna()
 
 # INTRODUCTION
 if page == "Introduction":
