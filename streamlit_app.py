@@ -167,22 +167,12 @@ elif page == "Modeling":
     # 3. Type of ownership
     ownership_types = ["Company - Private", "Company - Public", "Government", "Nonprofit Organization"]
     ownership = st.selectbox("Company Ownership Type", options=ownership_types)
-
-    state_map = {' KS': 1, ' NE': 1, ' OK': 1, ' MO': 1, ' IA': 1, ' AR': 1, ' IL': 2, ' IN': 2, ' KY': 2, ' CO': 2, 
-                ' SD': 2, ' MN': 2, ' TX': 2, ' TN': 2, ' WI': 3, ' MI': 3, ' OH': 3, ' MS': 3, ' ND': 3, ' NM': 3, 
-                ' WY': 3, ' GA': 4, ' AL': 4, ' PA': 4, ' NC': 4, ' SC': 4, ' LA': 4, ' MT': 4, ' AZ': 4, ' WV': 4,
-                ' NY': 5, ' NJ': 5, ' CA': 5, ' FL': 5, ' WA': 5, ' OR': 5, ' MA': 5, ' CT': 5, ' RI': 5, ' NH': 5,
-                ' ME': 5, ' DE': 5, ' MD': 5, ' VT': 5, ' NV': 5, ' UT': 5, ' ID': 5}
-    
-    owner_map = {"Company - Private": 2, "Company - Public": 1, "Nonprofit Organization": 0,
-                "Subsidiary or Business Segment": 2, "Government": 1, "Hospital": 2,
-                "College / University": 1, "Other Organization": 1, "School / School District": 1}
     
     # Display the inputs
     st.write("Selected values:")
     st.write("Python:", "Yes" if python_yn else "No")
-    st.write("Job State:", job_state)
-    st.write("Ownership:", ownership)
+    st.write("Job State:", state_map[job_state])
+    st.write("Ownership:", owner_map[ownership])
     
     inputdatapoint = pd.DataFrame([{
         'python_yn': python_yn,
