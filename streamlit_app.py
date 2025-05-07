@@ -204,12 +204,6 @@ elif page == "Modeling":
     ownership_types = ["Company - Private", "Company - Public", "Government", "Nonprofit Organization"]
     ownership = st.selectbox("Company Ownership Type", options=ownership_types)
     
-    # Display the inputs
-    st.write("Selected values:")
-    st.write("Python:", "Yes" if python_yn else "No")
-    st.write("Job State:", state_map[job_state])
-    st.write("Ownership:", owner_map[ownership])
-    
     inputdatapoint = pd.DataFrame([{
         'python_yn': python_yn,
         'Size': size,
