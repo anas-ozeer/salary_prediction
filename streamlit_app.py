@@ -217,7 +217,7 @@ elif page == "Hyperparameter Tuning":
     salary_train, salary_test = train_test_split(dfnew, test_size=0.2, random_state=42)
 
     # DAGsHub MLflow Integration
-    dagshub.init(repo_owner='anas-ozeer', repo_name='salary_prediction', mlflow=True)
+    dagshub.init(repo_owner='anas-ozeer', repo_name='salary_prediction', token='a2dd5cc1b8858cf2430c40a71d57f1814389d5fa',mlflow=True)
 
     if st.button("🚀 Run Hyperparameter Tuning & Log to MLflow"):
         with st.spinner("Training and logging top models..."):
