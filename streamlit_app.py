@@ -15,7 +15,7 @@ from streamlit_shap import st_shap
 import os
 
 
-os.environ["DAGSHUB_TOKEN"] = st.secrets["DAGSHUB_TOKEN"]
+
 @st.cache_data
 def load_data():
     return pd.read_csv('salary_data_cleaned.csv')
