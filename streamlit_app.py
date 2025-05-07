@@ -186,7 +186,7 @@ elif page == "Modeling":
     st.write(linregmodel.predict(inputdatapoint)*1000)
     
     st.write("XGBoost Prediction: ")
-    st.write(gb_model.predict(inputdatapoint)*1000)
+    st.write(xgb_model.predict(inputdatapoint)*1000)
 
 
 # AI EXPLAINABILITY
