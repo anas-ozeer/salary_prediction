@@ -88,7 +88,7 @@ narwhals==1.36.0
 nbformat==5.10.4
 nest-asyncio==1.6.0
 numba==0.61.2
-numpy==1.24.4
+numpy==1.26.4
 nvidia-nccl-cu12==2.26.2.post1
 opentelemetry-api==1.32.1
 opentelemetry-sdk==1.32.1
