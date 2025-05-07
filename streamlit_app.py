@@ -183,10 +183,12 @@ elif page == "Modeling":
     }])
 
     st.write("Linear Regression Prediction: ") 
-    st.write(linregmodel.predict(inputdatapoint)*1000)
+    linregmodel.predict(inputdatapoint)*1000
+    st.write("R^2 score =" + str(linregmodel.score(X_test, y_test)))
     
     st.write("XGBoost Prediction: ")
-    st.write(xgb_model.predict(inputdatapoint)*1000)
+    xgb_model.predict(inputdatapoint)*1000
+    st.write("R^2 score =" + str(xgb_model.score(X_test, y_test)))
 
 
 # AI EXPLAINABILITY
