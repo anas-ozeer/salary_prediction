@@ -341,6 +341,8 @@ elif page == "Hyperparameter Tuning":
 
                         st.write(f"**Model {i}: {model.__class__.__name__}**")
                         st.write(f"RMSE: {rmse:.2f} | MAE: {mae:.2f} | R2: {r2:.2f}")
+                        dagshub_mlflow_url = "https://dagshub.com/anas-ozeer/salary_prediction/mlflow"  # Replace with your repo URL
+                        st.markdown(f"[Go to MLflow UI on DAGsHub](https://dagshub.com/anas-ozeer/salary_prediction/mlflow)")  # Add this line
                     mlflow.end_run()
 
     # -----------------------------------------------------------------------------------
@@ -416,4 +418,7 @@ elif page == "Hyperparameter Tuning":
                     st.write(f"**Tuned XGBoost - RMSE:** {rmse:.2f} | **MAE:** {mae:.2f} | **R2:** {r2:.2f}")
                     st.write("📌 **Best Parameters:**")
                     st.json(search.best_params_)
+
+                    dagshub_mlflow_url = "https://dagshub.com/anas-ozeer/salary_prediction/mlflow"  # Replace with your repo URL
+                    st.markdown(f"[Go to MLflow UI on DAGsHub](https://dagshub.com/anas-ozeer/salary_prediction/mlflow)")  # Add this line
                 mlflow.end_run()
