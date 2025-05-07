@@ -345,61 +345,75 @@ elif page == "Hyperparameter Tuning":
 
     # -----------------------------------------------------------------------------------
     with tab2:
-        st.header("🎯 Manual XGBoost Hyperparameter Tuning")
+        st.header("🔧 Random Search Tuning for XGBoost Only")
 
-        if st.button("🚀 Run RandomizedSearchCV on XGBoost"):
+        if st.button("🎯 Run Randomized Search on XGBoost"):
             from sklearn.model_selection import RandomizedSearchCV
             from xgboost import XGBRegressor
+            from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+            import numpy as np
 
+            # Train-test split (use same split as tab1 if needed)
+            salary_train, salary_test = train_test_split(dfnew, test_size=0.2, random_state=42)
             X_train = salary_train.drop("avg_salary", axis=1)
             y_train = salary_train["avg_salary"]
             X_test = salary_test.drop("avg_salary", axis=1)
             y_test = salary_test["avg_salary"]
 
-            param_dist = {
-                'n_estimators': [100, 200, 300, 400, 500],
-                'learning_rate': [0.01, 0.05, 0.1, 0.15, 0.2],
-                'max_depth': [3, 4, 5, 6, 7, 8],
-                'subsample': [0.6, 0.7, 0.8, 0.9, 1.0],
-                'colsample_bytree': [0.6, 0.7, 0.8, 0.9, 1.0],
-                'gamma': [0, 0.1, 0.2, 0.3],
-                'reg_alpha': [0, 0.01, 0.1, 1],
-                'reg_lambda': [0.1, 0.5, 1.0, 1.5]
-            }
-
-            xgb = XGBRegressor(objective='reg:squarederror', random_state=42, n_jobs=-1)
-
-            search = RandomizedSearchCV(
-                estimator=xgb,
-                param_distributions=param_dist,
-                n_iter=50,
-                scoring='r2',
-                cv=5,
-                verbose=1,
+            # Base XGB model with good default values
+            xgb = XGBRegressor(
+                objective='reg:squarederror',
+                random_state=42,
                 n_jobs=-1,
-                random_state=42
+                n_estimators=19,
+                learning_rate=0.81,
+                max_depth=6
             )
 
-            with st.spinner("🔍 Tuning XGBoost..."):
+            # Biased search space centered around known good values
+            param_dist = {
+                'n_estimators': list(range(15, 30)),
+                'learning_rate': np.round(np.linspace(0.7, 0.9, 10), 2),
+                'max_depth': [5, 6, 7],
+                'subsample': [0.8, 0.9, 1.0],
+                'colsample_bytree': [0.8, 0.9, 1.0],
+                'gamma': [0, 0.1, 0.2],
+                'reg_alpha': [0, 0.01, 0.1],
+                'reg_lambda': [0.5, 1.0, 1.5]
+            }
+
+            with st.spinner("🔍 Running randomized search for XGBoost..."):
+                search = RandomizedSearchCV(
+                    estimator=xgb,
+                    param_distributions=param_dist,
+                    n_iter=30,
+                    scoring='r2',
+                    cv=5,
+                    verbose=1,
+                    random_state=42,
+                    n_jobs=-1
+                )
                 search.fit(X_train, y_train)
-
                 best_xgb = search.best_estimator_
-                y_pred = best_xgb.predict(X_test)
-
-                rmse = sk_metrics.mean_squared_error(y_test, y_pred, squared=False)
-                mae = sk_metrics.mean_absolute_error(y_test, y_pred)
-                r2 = sk_metrics.r2_score(y_test, y_pred)
 
                 with mlflow.start_run(run_name="Tuned XGBoost"):
-                    mlflow.sklearn.log_model(best_xgb, "tuned_xgboost_model")
+                    mlflow.sklearn.log_model(best_xgb, "xgb_tuned_model")
 
-                    for param, val in search.best_params_.items():
-                        mlflow.log_param(param, val)
+                    # Log best hyperparameters
+                    for key, value in search.best_params_.items():
+                        mlflow.log_param(key, value)
+
+                    y_pred = best_xgb.predict(X_test)
+                    rmse = mean_squared_error(y_test, y_pred, squared=False)
+                    mae = mean_absolute_error(y_test, y_pred)
+                    r2 = r2_score(y_test, y_pred)
 
                     mlflow.log_metric("RMSE", rmse)
                     mlflow.log_metric("MAE", mae)
                     mlflow.log_metric("R2", r2)
 
-                st.success("✅ XGBoost Tuning Complete and Logged")
-                st.write(f"**Best Params:** `{search.best_params_}`")
-                st.write(f"**RMSE:** {rmse:.2f} | **MAE:** {mae:.2f} | **R2:** {r2:.2f}")
+                    st.success("✅ XGBoost tuning complete and logged to MLflow!")
+                    st.write(f"**Tuned XGBoost - RMSE:** {rmse:.2f} | **MAE:** {mae:.2f} | **R2:** {r2:.2f}")
+                    st.write("📌 **Best Parameters:**")
+                    st.json(search.best_params_)
+                mlflow.end_run()
