@@ -279,10 +279,6 @@ elif page == "Hyperparameter Tuning":
                 early_stopping_max_iters=5,  # Set a limit on the number of iterations
                 search_library='scikit-learn',  # Use the default library
                 search_algorithm='random',  # Use random search (faster)
-                n_jobs=1,  # Use only one CPU core to minimize resource usage
-                verbose=False,  # Disable verbose logging
-                tuner_verbose=False,  # Disable tuner verbose logging
-                return_tuner=False  # Don't return tuner object
             )
 
             with mlflow.start_run(run_name=f"Tuned Model: {tuned_model.__class__.__name__}"):
