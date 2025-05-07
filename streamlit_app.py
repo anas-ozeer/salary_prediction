@@ -261,7 +261,7 @@ elif page == "AI Explainability":
 
     
     st.subheader("Correlation Matrix")
-    st.dataframe(sns.heatmap(dfnew.corr()))
+    st.write(sns.heatmap(dfnew.corr()))
     X = dfnew.drop("avg_salary", axis=1)
     y = dfnew["avg_salary"]
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
