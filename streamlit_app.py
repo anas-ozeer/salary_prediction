@@ -31,14 +31,14 @@ size_map = {"1 to 50 employees": 25, "51 to 200 employees": 125,"201 to 500 empl
            "10000+ employees":15000}
 
 # Apply the mapping to the 'Size' column (replace 'Size' with your actual column name if different)
-dfnew['Size'] = dfnew['Size'].map(mapping)
+dfnew['Size'] = dfnew['Size'].map(size_map)
 
 rev_map = {"Less than $1 million (USD)": 500000, "$1 to $5 million (USD)": 2500000,"$5 to $10 million (USD)":7500000,
            "$10 to $25 million (USD)":17500000,"$25 to $50 million (USD)":37500000,"$50 to $100 million (USD)":75000000,
            "$100 to $500 million (USD)":250000000,"$500 million to $1 billion (USD)":750000000,"$1 to $2 billion (USD)":1500000000,
            "$2 to $5 billion (USD)":3500000000,"$5 to $10 billion (USD)":7500000000,"$10+ billion (USD)":15000000000}
 
-dfnew['Revenue'] = dfnew['Revenue'].map(mapping)
+dfnew['Revenue'] = dfnew['Revenue'].map(rev_map)
 
 dfnew['Revenue'] = dfnew['Revenue'].fillna(0)
 dfnew['Size'] = dfnew['Size'].fillna(0)
@@ -63,7 +63,7 @@ state_map = {
 }
 
 # Map the states to their labels
-dfnew['job_state'] = dfnew['job_state'].map(state_to_distance_label)
+dfnew['job_state'] = dfnew['job_state'].map(state_map)
 dfnew['job_state'] = dfnew['job_state'].fillna(0)
 
 # Create a mapping dictionary
@@ -79,7 +79,7 @@ owner_map = {
     "School / School District":	1,
 }
 
-dfnew['Type of ownership'] = dfnew['Type of ownership'].map(mapping)
+dfnew['Type of ownership'] = dfnew['Type of ownership'].map(owner_map)
 
 dfnew = dfnew.dropna()
 
