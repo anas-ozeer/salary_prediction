@@ -293,73 +293,84 @@ elif page == "AI Explainability":
 
 # HYPERPARAMETER TUNING
 elif page == "Hyperparameter Tuning":
-    st.title("🤖 Hyperparameter Tuning with PyCaret + MLflow via DAGsHub")
-    
-    # Train-test split
-    salary_train, salary_test = train_test_split(dfnew, test_size=0.2, random_state=42)
+# -----------------------------------------------------------------------------------
+    st.title("🔧 Hyperparameter Tuning & MLflow Dashboard")
 
-    # DAGsHub MLflow Integration
-    dagshub.init(repo_owner='anas-ozeer', repo_name='salary_prediction', mlflow=True)
+    tab1, tab2, tab3 = st.tabs(
+        [
+            "1️⃣ Manual Grid Search",
+            "2️⃣ Browse MLflow Runs",
+            "3️⃣ Randomized Search",  # Changed tab name
+        ]
+    )
 
-    if st.button("🚀 Run Hyperparameter Tuning & Log to MLflow"):
-        with st.spinner("Training and logging top models..."):
-            from pycaret.regression import setup, compare_models, tune_model
+    with tab1:
+        st.header("📊 Compare Top 3 Regressors with PyCaret")
 
-            # PyCaret setup
-            reg1 = setup(data=salary_train, target='avg_salary', session_id=42, verbose=False)
+        # DAGsHub MLflow Integration
+        dagshub.init(repo_owner='anas-ozeer', repo_name='salary_prediction', mlflow=True)
 
-            # Select top 3 models
-            top3_models = compare_models(n_select=3)
+        # Train-test split
+        salary_train, salary_test = train_test_split(dfnew, test_size=0.2, random_state=42)
 
-            st.subheader("📊 Top 3 Models (Before Tuning):")
-            for i, model in enumerate(top3_models, 1):
-                with mlflow.start_run(run_name=f"Top Model {i}: {model.__class__.__name__}"):
-                    model_name = f"top_model_{i}"
-                    
-                    y_test = salary_test["avg_salary"]
-                    X_test = salary_test.drop("avg_salary", axis=1)
-                    y_pred = model.predict(X_test)
+        if st.button("🚀 Run Comparison & Log Top 3"):
+            with st.spinner("Training and logging top models..."):
+                from pycaret.regression import setup, compare_models
 
-                    rmse = sk_metrics.mean_squared_error(y_test, y_pred, squared=False)
-                    mae = sk_metrics.mean_absolute_error(y_test, y_pred)
-                    r2 = sk_metrics.r2_score(y_test, y_pred)
+                reg_setup = setup(data=salary_train, target='avg_salary', session_id=42, verbose=False)
+                top3_models = compare_models(n_select=3)
 
-                    mlflow.log_metric("RMSE", rmse)
-                    mlflow.log_metric("MAE", mae)
-                    mlflow.log_metric("R2", r2)
+                st.subheader("📋 Top 3 Models (Before Tuning):")
+                for i, model in enumerate(top3_models, 1):
+                    with mlflow.start_run(run_name=f"Top Model {i}: {model.__class__.__name__}"):
+                        y_test = salary_test["avg_salary"]
+                        X_test = salary_test.drop("avg_salary", axis=1)
+                        y_pred = model.predict(X_test)
 
-                    st.write(f"**Model {i}: {model.__class__.__name__}**")
-                    st.write(f"RMSE: {rmse:.2f} | MAE: {mae:.2f} | R2: {r2:.2f}")
+                        rmse = sk_metrics.mean_squared_error(y_test, y_pred, squared=False)
+                        mae = sk_metrics.mean_absolute_error(y_test, y_pred)
+                        r2 = sk_metrics.r2_score(y_test, y_pred)
 
-                mlflow.end_run()
+                        mlflow.log_metric("RMSE", rmse)
+                        mlflow.log_metric("MAE", mae)
+                        mlflow.log_metric("R2", r2)
 
-            # Pick the best of the top 3
-            # Find model with highest R2 on test set
+                        mlflow.sklearn.log_model(model, f"top_model_{i}")
+
+                        st.write(f"**Model {i}: {model.__class__.__name__}**")
+                        st.write(f"RMSE: {rmse:.2f} | MAE: {mae:.2f} | R2: {r2:.2f}")
+                    mlflow.end_run()
+
+    # -----------------------------------------------------------------------------------
+    with tab2:
+        st.header("🔧 Hyperparameter Tuning on Best Model")
+
+        if st.button("🎯 Run PyCaret Hyperparameter Tuning"):
+            from pycaret.regression import tune_model
+
+            # Pick best model based on R²
             best_model = max(top3_models, key=lambda model: sk_metrics.r2_score(
                 salary_test["avg_salary"], model.predict(salary_test.drop("avg_salary", axis=1))
             ))
 
-            st.subheader("🎯 Hyperparameter Tuning on Best Model")
-
-
-            # Perform hyperparameter tuning
             tuned_model = tune_model(
                 best_model,
-                n_iter=10,  # Limit number of iterations
-                early_stopping=True,  # Enable early stopping
-                early_stopping_max_iters=5,  # Set a limit on the number of iterations
-                search_library='scikit-learn',  # Use the default library
-                search_algorithm='random',  # Use random search (faster)
+                n_iter=10,
+                early_stopping=True,
+                early_stopping_max_iters=5,
+                search_library='scikit-learn',
+                search_algorithm='random',
             )
 
-            with mlflow.start_run(run_name=f"Tuned Model: {tuned_model.__class__.__name__}"):
-                model_name = "tuned_regressor_model"
+            with mlflow.start_run(run_name=f"Tuned: {tuned_model.__class__.__name__}"):
+                mlflow.sklearn.log_model(tuned_model, "tuned_model")
 
-                mlflow.sklearn.log_model(tuned_model, model_name)
                 params = tuned_model.get_params()
                 for key, value in params.items():
                     mlflow.log_param(key, value)
 
+                y_test = salary_test["avg_salary"]
+                X_test = salary_test.drop("avg_salary", axis=1)
                 y_pred = tuned_model.predict(X_test)
 
                 rmse = sk_metrics.mean_squared_error(y_test, y_pred, squared=False)
@@ -370,7 +381,6 @@ elif page == "Hyperparameter Tuning":
                 mlflow.log_metric("MAE", mae)
                 mlflow.log_metric("R2", r2)
 
-                st.success(f"✅ Logged Tuned Model: {tuned_model.__class__.__name__}")
+                st.success(f"✅ Tuned and Logged: {tuned_model.__class__.__name__}")
                 st.write(f"**Tuned Model - RMSE:** {rmse:.2f} | **MAE:** {mae:.2f} | **R2:** {r2:.2f}")
-
             mlflow.end_run()
