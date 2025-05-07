@@ -296,11 +296,10 @@ elif page == "Hyperparameter Tuning":
 # -----------------------------------------------------------------------------------
     st.title("🔧 Hyperparameter Tuning & MLflow Dashboard")
 
-    tab1, tab2, tab3 = st.tabs(
+    tab1, tab2 = st.tabs(
         [
             "1️⃣ Manual Grid Search",
             "2️⃣ Browse MLflow Runs",
-            "3️⃣ Randomized Search",  # Changed tab name
         ]
     )
 
@@ -319,6 +318,9 @@ elif page == "Hyperparameter Tuning":
 
                 reg_setup = setup(data=salary_train, target='avg_salary', session_id=42, verbose=False)
                 top3_models = compare_models(n_select=3)
+
+                # Save models in session_state for use in tab2
+                st.session_state["top3_models"] = top3_models
 
                 st.subheader("📋 Top 3 Models (Before Tuning):")
                 for i, model in enumerate(top3_models, 1):
@@ -345,42 +347,47 @@ elif page == "Hyperparameter Tuning":
     with tab2:
         st.header("🔧 Hyperparameter Tuning on Best Model")
 
-        if st.button("🎯 Run PyCaret Hyperparameter Tuning"):
-            from pycaret.regression import tune_model
+        if "top3_models" not in st.session_state:
+            st.warning("Please run model comparison in Tab 1 first.")
+        else:
+            if st.button("🎯 Run PyCaret Hyperparameter Tuning"):
+                from pycaret.regression import tune_model
 
-            # Pick best model based on R²
-            best_model = max(top3_models, key=lambda model: sk_metrics.r2_score(
-                salary_test["avg_salary"], model.predict(salary_test.drop("avg_salary", axis=1))
-            ))
+                top3_models = st.session_state["top3_models"]
 
-            tuned_model = tune_model(
-                best_model,
-                n_iter=10,
-                early_stopping=True,
-                early_stopping_max_iters=5,
-                search_library='scikit-learn',
-                search_algorithm='random',
-            )
+                # Pick best model based on R²
+                best_model = max(top3_models, key=lambda model: sk_metrics.r2_score(
+                    salary_test["avg_salary"], model.predict(salary_test.drop("avg_salary", axis=1))
+                ))
 
-            with mlflow.start_run(run_name=f"Tuned: {tuned_model.__class__.__name__}"):
-                mlflow.sklearn.log_model(tuned_model, "tuned_model")
+                tuned_model = tune_model(
+                    best_model,
+                    n_iter=10,
+                    early_stopping=True,
+                    early_stopping_max_iters=5,
+                    search_library='scikit-learn',
+                    search_algorithm='random',
+                )
 
-                params = tuned_model.get_params()
-                for key, value in params.items():
-                    mlflow.log_param(key, value)
+                with mlflow.start_run(run_name=f"Tuned: {tuned_model.__class__.__name__}"):
+                    mlflow.sklearn.log_model(tuned_model, "tuned_model")
 
-                y_test = salary_test["avg_salary"]
-                X_test = salary_test.drop("avg_salary", axis=1)
-                y_pred = tuned_model.predict(X_test)
+                    params = tuned_model.get_params()
+                    for key, value in params.items():
+                        mlflow.log_param(key, value)
 
-                rmse = sk_metrics.mean_squared_error(y_test, y_pred, squared=False)
-                mae = sk_metrics.mean_absolute_error(y_test, y_pred)
-                r2 = sk_metrics.r2_score(y_test, y_pred)
+                    y_test = salary_test["avg_salary"]
+                    X_test = salary_test.drop("avg_salary", axis=1)
+                    y_pred = tuned_model.predict(X_test)
 
-                mlflow.log_metric("RMSE", rmse)
-                mlflow.log_metric("MAE", mae)
-                mlflow.log_metric("R2", r2)
+                    rmse = sk_metrics.mean_squared_error(y_test, y_pred, squared=False)
+                    mae = sk_metrics.mean_absolute_error(y_test, y_pred)
+                    r2 = sk_metrics.r2_score(y_test, y_pred)
 
-                st.success(f"✅ Tuned and Logged: {tuned_model.__class__.__name__}")
-                st.write(f"**Tuned Model - RMSE:** {rmse:.2f} | **MAE:** {mae:.2f} | **R2:** {r2:.2f}")
-            mlflow.end_run()
+                    mlflow.log_metric("RMSE", rmse)
+                    mlflow.log_metric("MAE", mae)
+                    mlflow.log_metric("R2", r2)
+
+                    st.success(f"✅ Tuned and Logged: {tuned_model.__class__.__name__}")
+                    st.write(f"**Tuned Model - RMSE:** {rmse:.2f} | **MAE:** {mae:.2f} | **R2:** {r2:.2f}")
+                mlflow.end_run()
