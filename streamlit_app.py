@@ -218,13 +218,44 @@ elif page == "Modeling":
         'Type of ownership': owner_map[ownership]
     }])
 
-    st.write("Linear Regression Prediction: ") 
-    linregmodel.predict(inputdatapoint)*1000
-    st.write("R^2 score =" + str(linregmodel.score(X_test, y_test)))
+    from sklearn.metrics import mean_squared_error, mean_absolute_error
     
-    st.write("XGBoost Prediction: ")
-    xgb_model.predict(inputdatapoint)*1000
-    st.write("R^2 score =" + str(xgb_model.score(X_test, y_test)))
+    # Predict salaries
+    linreg_pred = linregmodel.predict(inputdatapoint)[0] * 1000
+    xgb_pred = xgb_model.predict(inputdatapoint)[0] * 1000
+    
+    # Predictions on test set (for metrics)
+    y_pred_linreg = linregmodel.predict(X_test)
+    y_pred_xgb = xgb_model.predict(X_test)
+    
+    # Evaluation Metrics
+    linreg_r2 = linregmodel.score(X_test, y_test)
+    xgb_r2 = xgb_model.score(X_test, y_test)
+    
+    linreg_rmse = np.sqrt(mean_squared_error(y_test, y_pred_linreg))
+    xgb_rmse = np.sqrt(mean_squared_error(y_test, y_pred_xgb))
+    
+    linreg_mae = mean_absolute_error(y_test, y_pred_linreg)
+    xgb_mae = mean_absolute_error(y_test, y_pred_xgb)
+    
+    # Display in Streamlit
+    st.subheader("💼 Salary Predictions")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("### 🔹 Linear Regression")
+        st.metric(label="Predicted Salary", value=f"${linreg_pred:,.0f}")
+        st.write(f"R² Score: `{linreg_r2:.2f}`")
+        st.write(f"RMSE: `{linreg_rmse:.2f}`")
+        st.write(f"MAE: `{linreg_mae:.2f}`")
+    
+    with col2:
+        st.markdown("### 🔸 XGBoost")
+        st.metric(label="Predicted Salary", value=f"${xgb_pred:,.0f}")
+        st.write(f"R² Score: `{xgb_r2:.2f}`")
+        st.write(f"RMSE: `{xgb_rmse:.2f}`")
+        st.write(f"MAE: `{xgb_mae:.2f}`")
 
 
 # AI EXPLAINABILITY
