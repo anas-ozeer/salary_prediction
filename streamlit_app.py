@@ -14,6 +14,17 @@ import shap
 from streamlit_shap import st_shap
 import os
 
+# Load secrets from .streamlit/secrets.toml
+DAGSHUB_USERNAME = st.secrets["DAGSHUB_USERNAME"]
+DAGSHUB_REPO_NAME = st.secrets["DAGSHUB_REPO_NAME"]
+DAGSHUB_USER_TOKEN = st.secrets["DAGSHUB_USER_TOKEN"]
+DAGSHUB_MLFLOW_URL = f"https://dagshub.com/{DAGSHUB_USERNAME}/{DAGSHUB_REPO_NAME}.mlflow"
+
+# Set up DagsHub authentication
+os.environ['MLFLOW_TRACKING_URI'] = f'https://dagshub.com/{DAGSHUB_USERNAME}/{DAGSHUB_REPO_NAME}.mlflow'
+os.environ['MLFLOW_TRACKING_USERNAME'] = DAGSHUB_USERNAME
+os.environ['MLFLOW_TRACKING_PASSWORD'] = DAGSHUB_USER_TOKEN
+
 
 
 @st.cache_data
@@ -306,14 +317,16 @@ elif page == "Hyperparameter Tuning":
     with tab1:
         st.header("📊 Compare Top 3 Regressors with PyCaret")
 
-        # DAGsHub MLflow Integration
-        dagshub.init(repo_owner='anas-ozeer', repo_name='salary_prediction', mlflow=True)
-
         # Train-test split
         salary_train, salary_test = train_test_split(dfnew, test_size=0.2, random_state=42)
 
         if st.button("🚀 Run Comparison & Log Top 3"):
             with st.spinner("Training and logging top models..."):
+                # DAGsHub MLflow Integration
+                try:
+                    dagshub.init(repo_owner=DAGSHUB_USERNAME, repo_name=DAGSHUB_REPO_NAME, mlflow=True)
+                except Exception as e:
+                    st.warning(f"⚠️ DagsHub connection failed: {e}. Logging to local mlruns/ instead.")
                 from pycaret.regression import setup, compare_models
 
                 reg_setup = setup(data=salary_train, target='avg_salary', session_id=42, verbose=False)
@@ -341,8 +354,7 @@ elif page == "Hyperparameter Tuning":
 
                         st.write(f"**Model {i}: {model.__class__.__name__}**")
                         st.write(f"RMSE: {rmse:.2f} | MAE: {mae:.2f} | R2: {r2:.2f}")
-                        dagshub_mlflow_url = "https://dagshub.com/anas-ozeer/salary_prediction/mlflow"  # Replace with your repo URL
-                        st.markdown(f"[Go to MLflow UI on DAGsHub](https://dagshub.com/anas-ozeer/salary_prediction/mlflow)")  # Add this line
+                        st.markdown(f"[Go to MLflow UI on DAGsHub]({DAGSHUB_MLFLOW_URL})")
                     mlflow.end_run()
 
     # -----------------------------------------------------------------------------------
@@ -419,6 +431,5 @@ elif page == "Hyperparameter Tuning":
                     st.write("📌 **Best Parameters:**")
                     st.json(search.best_params_)
 
-                    dagshub_mlflow_url = "https://dagshub.com/anas-ozeer/salary_prediction/mlflow"  # Replace with your repo URL
-                    st.markdown(f"[Go to MLflow UI on DAGsHub](https://dagshub.com/anas-ozeer/salary_prediction/mlflow)")  # Add this line
+                    st.markdown(f"[Go to MLflow UI on DAGsHub]({DAGSHUB_MLFLOW_URL})")
                 mlflow.end_run()
